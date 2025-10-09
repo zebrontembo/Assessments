@@ -152,7 +152,7 @@
 </audio>
 
 <script>
-window.SNAS_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbyzy4N8Ki322mGAEQIS2_BpHisoADkxc3SJBYy6uP6tAaMGYkg9gnfF4LtNj7GqBWV7XQ/exec";
+window.SNAS_SUBMIT_URL = "https://script.google.com/macros/s/AKfycby1jaPQM_TgdCFhYIt3zRWQRPcFi6DIBfj04m-vtwS66V3HI6Hw1xCD2gJIKo2V_VLQ_w/exec";
 </script>
 
 
@@ -500,8 +500,20 @@ window.SNAS_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbyzy4N8Ki322mG
     let posted = false;
     if(url){
       try{
-        const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-        posted = resp.ok;
+       let posted = false;
+try {
+  const resp = await fetch(url, {
+    method: 'POST',
+    // Use text/plain to avoid the CORS preflight that GAS won't answer
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+    redirect: 'follow'
+  });
+  posted = resp.ok;
+} catch (e) {
+  posted = false;
+}
+
       }catch(e){ posted = false; }
     }
     payload.posted = posted;
