@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mulungushi University — SNAS Assessment</title>
+<meta name="description" content="Viewer-only timed assessment: no student info, no response collection. Admin can add an Answer Grid link (e.g., Google Form) that appears at the end of the questions." />
+<style>
+  :root{
+    --bg:#ffffff; --panel:#f5f7fb; --ink:#0b1220; --muted:#475569; --accent:#0b53d6;
+    --ok:#0e7c47; --warn:#b7791f; --bad:#b91c1c; --border:#cbd5e1; --card:#ffffff; --shadow:0 6px 24px rgba(2,8,23,.08);
+  }
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,Helvetica,sans-serif}
+  header{position:sticky;top:0;z-index:10;background:var(--panel);border-bottom:1px solid var(--border);padding:.75rem 1rem;box-shadow:var(--shadow)}
+  h1{margin:0;font-size:1.1rem}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 .75rem;position:relative}
+  .row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-top:.5rem}
+  button{appearance:none;border:1px solid var(--border);background:#fff;color:var(--ink);padding:.55rem .85rem;border-radius:.7rem;cursor:pointer;box-shadow:0 1px 0 rgba(2,8,23,.03);font-weight:600}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.warn{background:var(--warn);color:#fff;border-color:var(--warn)}
+  button:disabled{opacity:.6;cursor:not-allowed}
+  input[type="number"], input[type="text"], input[type="password"], input[type="date"], input[type="time"], input[type="url"]{padding:.5rem .6rem;border:1px solid var(--border);border-radius:.6rem;background:#fff;color:#000}
+  .pill{border:1px solid var(--border);padding:.15rem .5rem;border-radius:999px;background:#fff;color:#000;font-size:.85rem}
+  .grid{display:grid;grid-template-columns: 380px 1fr;gap:1rem}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:1rem;padding:1rem;box-shadow:var(--shadow)}
+  .list{display:flex;flex-direction:column;gap:.7rem;max-height:58vh;overflow:auto;padding-right:.25rem}
+  .qitem{display:grid;grid-template-columns:64px 1fr auto;gap:.6rem;align-items:center;border:1px dashed var(--border);border-radius:.8rem;padding:.55rem;background:#fff}
+  .qitem img{width:64px;height:64px;object-fit:cover;border-radius:.5rem;border:1px solid var(--border)}
+  .qtitle{font-weight:700}
+  .qmeta{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+  .qmeta input[type="number"]{width:5.5rem}
+  .dropzone{border:2px dashed var(--accent);padding:1.25rem;border-radius:1rem;text-align:center;color:#000;background:#fff}
+  .muted{color:#475569;font-size:.92rem}
+  .hidden{display:none !important}
+  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;}
+  .footer{margin-top:2rem;text-align:center;color:#475569;font-size:.95rem;padding:1.2rem;border-top:1px solid var(--border);background:#f9fafb}
+  .footer strong{display:block;margin-top:.3rem;font-size:1.05rem;color:#0b1220}
+  .badge{display:inline-block;background:#fff;border:1px solid var(--border);border-radius:999px;padding:.1rem .5rem;color:#475569;font-size:.8rem}
+
+  /* Student paper (viewer-only) */
+  #paper{display:none}
+  #qimg{max-width:100%;max-height:60vh;width:100%;height:auto;object-fit:contain;border:1px solid #e2e8f0;border-radius:.7rem;box-shadow:0 4px 22px rgba(2,8,23,.08);user-select:none;-webkit-user-drag:none;transform-origin:center}
+  #qTimer{font-weight:800}
+
+  /* Answer grid link at end */
+  #answerLink{display:none;margin-top:1rem;padding:1rem;border:1px solid var(--border);border-radius:.8rem;background:#fff;box-shadow:var(--shadow)}
+  #answerLink a{font-weight:800;text-decoration:underline}
+
+  /* Blank overlay with ENDED message (also shows answer link) */
+  #blank{position:fixed;inset:0;background:#fff;display:none;z-index:1000;align-items:center;justify-content:center;flex-direction:column;padding:1rem;text-align:center}
+  #blank .msg{font-size:2rem;font-weight:800;letter-spacing:.5px;color:#0b1220;margin-bottom:1rem}
+  #blank .gridlink{font-size:1rem}
+
+  /* Logo top-right */
+  .brand-logo{
+    position:absolute; right:.75rem; top:.2rem; height:50px; width:auto; object-fit:contain;
+  }
+
+  @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap" style="position:relative">
+    <h1>Mulungushi University — SNAS Assessment</h1>
+    <!-- ✅ Official logo top-right (kept original filename) -->
+    <img src="Mulungushi-University-logo1-239x300.jpg" alt="Mulungushi University Logo" class="brand-logo">
+    <div class="row" id="adminRow">
+      <span class="pill">Admin PIN: <input id="pin" type="password" style="width:9rem" placeholder=""></span>
+      <button id="unlockBtn">Unlock</button>
+      <button id="changePinBtn" class="btn">Change PIN</button>
+      <span id="lockState" class="badge">Locked</span>
+      <span class="pill">Exam Code: <input id="examCode" type="text" placeholder="e.g., CHE111-Q1-2025" style="width:12rem"></span>
+      <span class="pill">Default time (min): <input id="defaultMins" type="number" min="0.1" step="0.1" value="1.0" style="width:6rem"></span>
+      <label class="pill"><input type="checkbox" id="needFS" checked> Require fullscreen</label>
+      <label class="pill"><input type="checkbox" id="singleAttempt" checked> Single attempt</label>
+      <span class="pill">Date: <input id="availDate" type="date" style="width:11.5rem"></span>
+      <span class="pill">Start: <input id="availStart" type="time" style="width:8rem"></span>
+      <span class="pill">End: <input id="availEnd" type="time" style="width:8rem"></span>
+      <span class="pill">Answer grid URL: <input id="answerGridUrl" type="url" placeholder="https://forms.gle/..." style="width:16rem"></span>
+      <button id="saveBtn" class="btn">Save Quiz</button>
+      <button id="loadBtn" class="btn">Load Quiz</button>
+      <input id="loadFile" type="file" accept=".quiz,application/json" class="hidden" />
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grid">
+    <aside class="card" id="adminPanel" style="display:none">
+      <h3 style="margin-top:0">Admin • Questions & Marking Key</h3>
+      <div class="row">
+        <input id="fileInput" type="file" accept="image/*" multiple class="btn" />
+        <button id="pasteBtn" class="btn">Paste image (Ctrl/Cmd + V)</button>
+        <button id="clearBtn" class="warn">Clear bank</button>
+      </div>
+      <div id="dropzone" class="dropzone" style="margin-top:.6rem">
+        Drop images here • or click “Paste image” then Ctrl/Cmd+V • or use the file picker.
+        <div class="muted" style="margin-top:.5rem">Set <b>Time (min)</b> for each question (Correct A–D is ignored in viewer mode).</div>
+      </div>
+      <div id="list" class="list" style="margin-top:.7rem"></div>
+      <hr>
+      <div class="row">
+        <label class="pill">Violations allowed: <input id="violations" type="number" min="1" value="2" style="width:5rem"></label>
+        <label class="pill"><input type="checkbox" id="beepLast5" checked> Beep last 5s</label>
+      </div>
+      <div class="row">
+        <button id="resetAll" class="warn">Clear local data</button>
+      </div>
+    </aside>
+
+    <section class="card">
+      <h3 style="margin-top:0">Student</h3>
+      <div id="warn" class="muted"></div>
+
+      <div class="row">
+        <button id="beginBtn" class="primary">Begin Assessment</button>
+      </div>
+
+      <div id="paper" style="margin-top:1rem">
+        <div class="row" style="justify-content:space-between">
+          <div><span id="progress" class="badge">Not started</span></div>
+          <div><span id="qTimer" class="badge" style="display:none">00:00</span></div>
+        </div>
+        <div style="margin-top:.6rem">
+          <img id="qimg" alt="Question">
+        </div>
+
+        <!-- Link to external answer grid appears only on the last question -->
+        <div id="answerLink" class="muted">
+          <div><strong>Finished the questions?</strong></div>
+          <div>
+            <a id="answerGridAnchor" href="#" target="_blank" rel="noopener">CLICK HERE TO PUT YOUR ANSWERS IN THE ANSWER GRID</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ✅ Footer with author credit -->
+  <div class="footer">
+    © 2025 Mulungushi University — SNAS
+    <strong>Created by Mr ZN TEMBO</strong>
+  </div>
+</main>
+
+<div id="blank" aria-hidden="true">
+  <div class="msg">ASSESSMENT ENDED</div>
+  <div class="gridlink">
+    <a id="answerGridAnchorOverlay" href="#" target="_blank" rel="noopener">CLICK HERE TO PUT YOUR ANSWERS IN THE ANSWER GRID</a>
+  </div>
+</div>
+
+<audio id="beepAudio">
+  <source src="data:audio/wav;base64,UklGRn4AAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAaW1hZ2UtYmVlcAAA//8AAP//AAD//wAA//8AAP//AAD//wAA" type="audio/wav">
+</audio>
+
+<script>
+window.SNAS_SUBMIT_URL = ""; // Viewer mode
+</script>
+
+<script>
+(function(){
+  const url = new URL(location.href);
+  const param = k => url.searchParams.get(k);
+  const QUIZ_FILE = param('quiz') || '';
+  const MODE_STUDENT_LOCK = param('lock') === '1' && param('admin') !== '1';
+  const STORAGE = { pin:"snas_pin_v34", bank:"snas_bank_v34", settings:"snas_settings_v34" };
+  const DEFAULT_PIN = "ZebMU#997";
+
+  function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+  function load(k,d=null){ try{ const v = JSON.parse(localStorage.getItem(k)); return (v===null?d:v);}catch(e){ return d; } }
+  function $(q){ return document.querySelector(q.startsWith('#')? q : '#'+q) }
+
+  const adminRow = $('#adminRow'), adminPanel = $('#adminPanel');
+  const pin = $('#pin'), unlockBtn = $('#unlockBtn'), lockState = $('#lockState'), changePinBtn = $('#changePinBtn');
+  const fileInput = $('#fileInput'), pasteBtn = $('#pasteBtn'), dropzone = $('#dropzone');
+  const list = $('#list'), clearBtn = $('#clearBtn'), resetAll = $('#resetAll');
+  const defaultMins = $('#defaultMins'), violations = $('#violations'), examCode = $('#examCode');
+  const availDate = $('#availDate'), availStart = $('#availStart'), availEnd = $('#availEnd');
+  const answerGridUrl = $('#answerGridUrl');
+  const needFS = $('#needFS'), singleAttempt = $('#singleAttempt'), beepAudio = $('#beepAudio');
+  const saveBtn = $('#saveBtn'), loadBtn = $('#loadBtn'), loadFile = $('#loadFile');
+  const beginBtn = $('#beginBtn');
+  const paper = $('#paper'), progress = $('#progress'), qimg = $('#qimg');
+  const qTimer = $('#qTimer'), warn = $('#warn');
+  const answerLink = $('#answerLink'), answerGridAnchor = $('#answerGridAnchor'), answerGridAnchorOverlay = $('#answerGridAnchorOverlay');
+
+  let items = load(STORAGE.bank, []);
+  let cur = { started:false, index:0, locked:[], remain:0, timer:null, strikes:0, startedAt:0, duration:0 };
+
+  if(MODE_STUDENT_LOCK){
+    adminRow.style.display = 'none';
+    adminPanel.style.display = 'none';
+    localStorage.removeItem(STORAGE.pin);
+  }
+
+  unlockBtn?.addEventListener('click', ()=>{
+    const p = pin.value.trim();
+    const saved = load(STORAGE.pin, DEFAULT_PIN);
+    const ok = (p === saved);
+    lockState.textContent = ok ? 'Unlocked' : 'Locked';
+    lockState.style.color = ok ? 'green' : '#b91c1c';
+    adminPanel.style.display = ok ? 'block' : 'none';
+  });
+  changePinBtn?.addEventListener('click', ()=>{
+    const saved = load(STORAGE.pin, DEFAULT_PIN);
+    const oldTry = prompt('Enter current PIN to change:');
+    if(oldTry === null) return;
+    if(oldTry !== saved){ alert('Incorrect current PIN.'); return; }
+    const np = prompt('Enter new PIN (min 4 chars):');
+    if(!np || np.trim().length < 4){ alert('PIN too short.'); return; }
+    save(STORAGE.pin, np.trim());
+    alert('PIN updated.');
+  });
+
+  function renderList(){
+    list.innerHTML = '';
+    items.forEach((it,i)=>{
+      const el = document.createElement('div');
+      el.className = 'qitem';
+      el.innerHTML = `
+        <img src="${it.dataUrl}">
+        <div>
+          <div class="qtitle">Question ${i+1}</div>
+          <div class="qmeta">
+            <label>Time (min): <input data-id="${it.id}" class="qt" type="number" min="0.1" step="0.1" value="${it.mins ?? ''}" placeholder="default"></label>
+            <label class="muted">Key ignored in viewer mode</label>
+            <span class="badge mono">${Math.round((it.dataUrl.length - (it.dataUrl.indexOf(',')+1))*3/4/1024*10)/10} KB</span>
+          </div>
+        </div>
+        <div class="qcontrols">
+          <button title="Move up" ${i===0?'disabled':''} data-act="up" data-i="${i}">▲</button>
+          <button title="Move down" ${i===items.length-1?'disabled':''} data-act="down" data-i="${i}">▼</button>
+          <button title="Remove" class="warn" data-act="del" data-i="${i}">Remove</button>
+        </div>`;
+      list.appendChild(el);
+    });
+    save(STORAGE.bank, items);
+  }
+  function addFiles(files){
+    [...files].forEach(file=>{
+      if(!file.type.startsWith('image/')) return;
+      const r = new FileReader();
+      r.onload = e => { items.push({id:crypto.randomUUID(), dataUrl:e.target.result, mins:null, key:-1}); renderList(); };
+      r.readAsDataURL(file);
+    });
+  }
+  fileInput?.addEventListener('change', e=> addFiles(e.target.files));
+  pasteBtn?.addEventListener('click', ()=> alert('Now press Ctrl/Cmd + V to paste an image from your clipboard.'));
+  window.addEventListener('paste', e=>{
+    if(!adminPanel || adminPanel.style.display === 'none') return;
+    const arr = e.clipboardData?.items || []; let found=false;
+    for(const it of arr){
+      if(it.kind==='file' && it.type.startsWith('image/')){
+        const f = it.getAsFile(), r=new FileReader();
+        r.onload = ev => { items.push({id:crypto.randomUUID(), dataUrl:ev.target.result, mins:null, key:-1}); renderList(); };
+        r.readAsDataURL(f); found = true;
+      }
+    }
+    if(found) e.preventDefault();
+  });
+  ['dragenter','dragover'].forEach(ev=> window.addEventListener(ev, e=>{ e.preventDefault(); dropzone && (dropzone.style.opacity=.9); }));
+  ['dragleave','drop'].forEach(ev=> window.addEventListener(ev, e=>{ e.preventDefault(); dropzone && (dropzone.style.opacity=1); }));
+  window.addEventListener('drop', e=> addFiles(e.dataTransfer.files || []));
+
+  list?.addEventListener('input', e=>{
+    if(e.target.classList.contains('qt')){
+      const id = e.target.getAttribute('data-id'); const it = items.find(x=>x.id===id);
+      it.mins = e.target.value ? Math.max(0.1, Number(e.target.value)) : null; save(STORAGE.bank, items);
+    }
+  });
+  list?.addEventListener('click', e=>{
+    const act = e.target.getAttribute('data-act'); const i = Number(e.target.getAttribute('data-i'));
+    if(act==='up' && i>0){ [items[i-1], items[i]] = [items[i], items[i-1]]; renderList(); }
+    if(act==='down' && i<items.length-1){ [items[i+1], items[i]] = [items[i], items[i-1]]; renderList(); }
+    if(act==='del'){ items.splice(i,1); renderList(); }
+  });
+  clearBtn?.addEventListener('click', ()=>{ if(confirm('Clear all images?')){ items=[]; renderList(); }});
+
+  function makeQuizState(){
+    return {
+      meta: { app:'SNAS Assessment (Viewer)', savedAt:new Date().toISOString(), version:1 },
+      defaultMins: Number(defaultMins.value || 1),
+      settings: {
+        needFS: needFS.checked, singleAttempt: singleAttempt.checked,
+        violations: Number(violations.value || 2), beepLast5: $('#beepLast5')?.checked ?? true,
+        examCode: examCode.value.trim(),
+        availDate: availDate.value || '', availStart: availStart.value || '', availEnd: availEnd.value || '',
+        answerGridUrl: answerGridUrl.value.trim() || ''
+      },
+      items: items.map(it => ({ id: it.id, mins: it.mins, dataUrl: it.dataUrl, key: it.key }))
+    };
+  }
+  function download(filename, content, type='application/json'){
+    const blob = new Blob([content], {type}); const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 0);
+  }
+  saveBtn?.addEventListener('click', ()=>{
+    if(items.length===0 && !confirm('No questions added yet. Save empty template?')) return;
+    const state = makeQuizState(); const ts = new Date().toISOString().replace(/[:.]/g,'-');
+    download(`quiz_${ts}.quiz`, JSON.stringify(state, null, 2));
+  });
+  loadBtn?.addEventListener('click', ()=> loadFile?.click());
+  loadFile?.addEventListener('change', e=>{
+    const f = e.target.files && e.target.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = ev => {
+      try{ const state = JSON.parse(ev.target.result); applyState(state); renderList(); alert('Quiz loaded.'); }
+      catch(er){ alert('Invalid .quiz file'); }
+    };
+    r.readAsText(f); e.target.value='';
+  });
+
+  const savedSet = load(STORAGE.settings, null);
+  if(savedSet){
+    defaultMins.value = savedSet.defaultMins ?? 1;
+    violations.value = savedSet.violations ?? 2;
+    needFS.checked = !!savedSet.needFS;
+    singleAttempt.checked = !!savedSet.singleAttempt;
+    examCode.value = savedSet.examCode || '';
+    availDate.value = savedSet.availDate || '';
+    availStart.value = savedSet.availStart || '';
+    availEnd.value = savedSet.availEnd || '';
+    answerGridUrl.value = savedSet.answerGridUrl || '';
+    syncAnswerGridLinks();
+  }
+  function persistSettings(){
+    const newSet = {
+      defaultMins:Number(defaultMins.value||1), violations:Number(violations.value||2),
+      needFS:needFS.checked, singleAttempt:singleAttempt.checked, examCode:examCode.value.trim(),
+      availDate: availDate.value || '', availStart: availStart.value || '', availEnd: availEnd.value || '',
+      answerGridUrl: answerGridUrl.value.trim() || ''
+    };
+    save(STORAGE.settings, newSet);
+    showAvailabilityMessage();
+    syncAnswerGridLinks();
+  }
+  [defaultMins, violations, needFS, singleAttempt, examCode, availDate, availStart, availEnd, answerGridUrl].forEach(el=> el?.addEventListener('change', persistSettings));
+
+  function parseAvail(st){
+    if(!st.availDate || !st.availStart || !st.availEnd) return null;
+    const [y,m,d] = st.availDate.split('-').map(Number);
+    const [sh,sm] = st.availStart.split(':').map(Number);
+    const [eh,em] = st.availEnd.split(':').map(Number);
+    const start = new Date(y, (m||1)-1, d||1, sh||0, sm||0, 0);
+    const end   = new Date(y, (m||1)-1, d||1, eh||23, em||59, 59);
+    return {start, end};
+  }
+  function withinAvailability(){
+    const st = load(STORAGE.settings, {});
+    const win = parseAvail(st);
+    if(!win) return true;
+    const now = new Date();
+    return now >= win.start && now <= win.end;
+  }
+  function showAvailabilityMessage(){
+    const st = load(STORAGE.settings, {});
+    const win = parseAvail(st);
+    if(!win){ warn.textContent=''; return; }
+    const fmt = d => d.toLocaleString();
+    const now = new Date();
+    if(now < win.start){
+      warn.textContent = `This assessment opens at ${fmt(win.start)} and closes at ${fmt(win.end)}.`; warn.style.color = '#b7791f';
+    }else if(now > win.end){
+      warn.textContent = `This assessment closed at ${fmt(win.end)}.`; warn.style.color = '#b91c1c';
+    }else{
+      warn.textContent = `Assessment is open until ${fmt(win.end)}.`; warn.style.color = '#0e7c47';
+    }
+  }
+
+  beginBtn.addEventListener('click', async ()=>{
+    if(items.length===0){ alert('No questions available. Admin must provide a .quiz file or add images.'); return; }
+    const st = load(STORAGE.settings, {});
+    if(!withinAvailability()){ showAvailabilityMessage(); alert('This assessment is not available at this time.'); return; }
+    if(!st.examCode){ alert('Admin: set an Exam Code first (in the .quiz).'); return; }
+    if(st.needFS && !document.fullscreenElement){ try{ await document.documentElement.requestFullscreen?.(); }catch{} }
+    cur = { started:true, index:0, locked:new Array(items.length).fill(false), remain:0, timer:null, strikes:0, startedAt:0, duration:0 };
+    paper.style.display='block';
+    renderQ(); startTimer(); bindAntiCheat(); showAvailabilityMessage();
+  });
+
+  function getSeconds(i){
+    const mins = (items[i].mins!=null ? items[i].mins : Number(defaultMins.value || 1)); return Math.max(0.1, mins) * 60;
+  }
+
+  function renderQ(){
+    const i = cur.index;
+    qimg.src = items[i].dataUrl;
+    qimg.style.transform = 'translate(0px,0px) scale(1)';
+    progress.textContent = `Question ${i+1} of ${items.length}`;
+    cur.duration = getSeconds(i); cur.remain = cur.duration; qTimer.style.display='inline-block';
+
+    // Show the external answer grid link only on the last question, if a URL is set
+    const st = load(STORAGE.settings, {});
+    const hasUrl = !!(st.answerGridUrl && /^https?:\/\//i.test(st.answerGridUrl));
+    if(i === items.length - 1 && hasUrl){
+      answerLink.style.display = 'block';
+    }else{
+      answerLink.style.display = 'none';
+    }
+  }
+
+  function endAssessment(reason='Finished'){
+    if(cur.timer) clearInterval(cur.timer);
+    document.querySelector('#blank .msg').textContent = `ASSESSMENT ENDED — ${reason}`;
+    document.querySelector('#blank').style.display='flex';
+    paper.style.display='none';
+  }
+
+  function startTimer(){
+    if(cur.timer) clearInterval(cur.timer);
+    cur.startedAt = performance.now();
+    cur.timer = setInterval(()=>{
+      const elapsed = (performance.now() - cur.startedAt)/1000;
+      cur.remain = Math.max(0, cur.duration - elapsed);
+      if((document.querySelector('#beepLast5')?.checked ?? true) && cur.remain<=5.2 && cur.remain>4.9){ try{ beepAudio.currentTime=0; beepAudio.play(); }catch{} }
+      const mm = Math.floor(cur.remain/60); const ss = Math.floor(cur.remain%60).toString().padStart(2,'0'); qTimer.textContent = `${mm}:${ss}`;
+      if(cur.remain<=0.05){
+        const i = cur.index;
+        if(i < items.length-1){
+          cur.index++; renderQ(); cur.startedAt = performance.now();
+        }else{
+          endAssessment('Time elapsed');
+        }
+      }
+    }, 100);
+  }
+
+  function bindAntiCheat(){
+    document.addEventListener('contextmenu', e=> e.preventDefault());
+    document.addEventListener('copy', e=> e.preventDefault());
+    document.addEventListener('cut', e=> e.preventDefault());
+    document.addEventListener('paste', e=> e.preventDefault());
+    document.addEventListener('keydown', e=>{
+      const badComb = (e.ctrlKey||e.metaKey) && ['c','x','v','p','s'].includes(e.key.toLowerCase());
+      const dbg = (e.key==='F12') || (e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(e.key.toUpperCase()));
+      if(badComb||dbg){ e.preventDefault(); }
+    });
+    document.addEventListener('visibilitychange', ()=>{ if(document.hidden) strike('Tab change'); });
+    window.addEventListener('blur', ()=> strike('Window blur'));
+    document.addEventListener('fullscreenchange', ()=>{
+      const st = load(STORAGE.settings, {});
+      if(st.needFS && !document.fullscreenElement) strike('Exited fullscreen');
+    });
+  }
+  function strike(reason){
+    const st = load(STORAGE.settings, {});
+    cur.strikes = (cur.strikes||0)+1;
+    const left = Math.max(0, (Number(st.violations||2)) - cur.strikes);
+    warn.textContent = `Anti-cheat warning: ${reason} • Remaining allowed: ${left}`;
+    warn.style.color = left>0 ? '#b7791f' : '#b91c1c';
+    if(left<=0) endAssessment('Violation limit reached');
+  }
+
+  function applyState(state){
+    if(state.defaultMins!=null) defaultMins.value = Number(state.defaultMins) || 1;
+    if(state.settings){
+      needFS.checked = !!state.settings.needFS; singleAttempt.checked = !!state.settings.singleAttempt;
+      violations.value = Number(state.settings.violations || 2);
+      if(document.querySelector('#beepLast5')) document.querySelector('#beepLast5').checked = !!state.settings.beepLast5;
+      examCode.value = state.settings.examCode || '';
+      availDate.value = state.settings.availDate || '';
+      availStart.value = state.settings.availStart || '';
+      availEnd.value = state.settings.availEnd || '';
+      answerGridUrl.value = state.settings.answerGridUrl || '';
+      syncAnswerGridLinks();
+    }
+    save(STORAGE.settings, {
+      defaultMins:Number(defaultMins.value||1), violations:Number(violations.value||2),
+      needFS:needFS.checked, singleAttempt:singleAttempt.checked, examCode:examCode.value.trim(),
+      availDate: availDate.value || '', availStart: availStart.value || '', availEnd: availEnd.value || '',
+      answerGridUrl: answerGridUrl.value.trim() || ''
+    });
+    items = (state.items||[]).map(it => ({ id: it.id || crypto.randomUUID(), dataUrl: it.dataUrl, mins: it.mins!=null? Number(it.mins):null, key: (it.key!=null? Number(it.key): -1) }));
+    renderList(); showAvailabilityMessage();
+  }
+
+  function syncAnswerGridLinks(){
+    const st = load(STORAGE.settings, {});
+    const href = (st.answerGridUrl||'').trim();
+    const valid = /^https?:\/\//i.test(href);
+    document.getElementById('answerGridAnchor').href = valid ? href : '#';
+    document.getElementById('answerGridAnchorOverlay').href = valid ? href : '#';
+  }
+
+  async function autoLoadQuizFromParam(){
+    if(!QUIZ_FILE) { showAvailabilityMessage(); return; }
+    try{
+      const resp = await fetch(QUIZ_FILE, {cache:'no-store'});
+      if(!resp.ok) throw new Error('Quiz HTTP '+resp.status);
+      const state = await resp.json();
+      applyState(state);
+      if(MODE_STUDENT_LOCK){ adminRow.style.display = 'none'; adminPanel.style.display = 'none'; }
+    }catch(e){
+      console.error('Failed to auto-load .quiz:', e);
+      alert('Could not load quiz file: '+QUIZ_FILE);
+    }
+  }
+
+  renderList();
+  autoLoadQuizFromParam();
+  showAvailabilityMessage();
+  syncAnswerGridLinks();
+
+  /* Viewer zoom & pan retained */
+  let scale=1, tx=0, ty=0, dragging=false, last={x:0,y:0};
+  qimg.addEventListener('wheel', e=>{
+    e.preventDefault();
+    const delta = -e.deltaY, zf = Math.exp(delta*0.0015);
+    const rect = qimg.getBoundingClientRect();
+    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+    const ox = (cx - tx), oy = (cy - ty);
+    const prevScale = scale;
+    scale = Math.min(10, Math.max(0.2, scale * zf));
+    tx = cx - ox * (scale/prevScale);
+    ty = cy - oy * (scale/prevScale);
+    qimg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  }, {passive:false});
+  qimg.addEventListener('pointerdown', e=>{ dragging=true; last={x:e.clientX,y:e.clientY}; qimg.setPointerCapture(e.pointerId); });
+  qimg.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    const dx=e.clientX-last.x, dy=e.clientY-last.y; tx+=dx; ty+=dy; last={x:e.clientX,y:e.clientY};
+    qimg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(ev=> qimg.addEventListener(ev, ()=> dragging=false ));
+  qimg.addEventListener('click', (e)=>{
+    const now = Date.now(); qimg.__lt = qimg.__lt || 0;
+    if(now - qimg.__lt < 300){ scale=1; tx=0; ty=0; qimg.style.transform = 'translate(0px,0px) scale(1)'; }
+    qimg.__lt = now;
+  });
+
+})();</script>
+</body>
+</html>
