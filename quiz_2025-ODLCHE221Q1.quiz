@@ -8,7 +8,7 @@
   "settings": {
     "needFS": true,
     "singleAttempt": true,
-    "violations": 2,
+    "violations": 5,
     "beepLast5": true,
     "examCode": "112",
     "availDate": "2025-10-12",
