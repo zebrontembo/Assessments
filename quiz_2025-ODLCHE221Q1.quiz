@@ -10,10 +10,10 @@
     "singleAttempt": true,
     "violations": 5,
     "beepLast5": true,
-    "examCode": "112",
+    "examCode": "113",
     "availDate": "2025-10-12",
-    "availStart": "16:40",
-    "availEnd": "17:50",
+    "availStart": "19:00",
+    "availEnd": "20:10",
     "answerGridUrl": "https://docs.google.com/forms/d/1IqZT5DIciFXEM89L5vZl4Kapfms6mQysURObydmhbJg/edit"
   },
   "items": [
