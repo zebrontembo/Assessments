@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SNAS — Clear Attempt Locks</title>
+<style>
+  :root{--ink:#0b1220;--muted:#475569;--border:#cbd5e1;--accent:#0b53d6;--bg:#ffffff}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,Helvetica,sans-serif}
+  .wrap{max-width:760px;margin:2rem auto;padding:0 1rem}
+  h1{font-size:1.3rem;margin:0 0 1rem}
+  .card{border:1px solid var(--border);border-radius:12px;padding:1rem}
+  .row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:.5rem 0}
+  input{padding:.5rem .6rem;border:1px solid var(--border);border-radius:.6rem}
+  button{appearance:none;border:1px solid var(--border);background:#fff;color:var(--ink);padding:.55rem .9rem;border-radius:.7rem;cursor:pointer}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.95rem}
+  .log{border:1px dashed var(--border);border-radius:.6rem;padding:.6rem;background:#fff;max-height:40vh;overflow:auto;white-space:pre-wrap}
+  .muted{color:var(--muted);font-size:.95rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SNAS — Clear Attempt Locks (LocalStorage)</h1>
+  <p class="muted">Use this utility on the <b>same site</b> as your quiz (same domain). It removes localStorage keys shaped like <span class="mono">snas_attempt_&lt;ExamCode&gt;_&lt;StudentNumber&gt;</span>.</p>
+
+  <div class="card">
+    <div class="row">
+      <button id="listBtn">List Attempt Keys</button>
+      <button id="clearAllBtn" class="primary">Clear ALL Attempts (this browser)</button>
+    </div>
+    <div class="row">
+      <input id="exam" placeholder="Exam Code e.g. CHE111-Q1-2025" style="min-width:16rem">
+      <input id="sid" placeholder="Student Number e.g. 20241234" style="min-width:13rem">
+      <button id="clearOneBtn">Clear ONE</button>
+      <button id="clearExamBtn">Clear by Exam Code</button>
+    </div>
+    <div class="row">
+      <div id="log" class="log mono"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const log = msg => { const el=document.getElementById('log'); el.textContent += msg + "\\n"; el.scrollTop = el.scrollHeight; };
+const attemptKeys = () => Object.keys(localStorage).filter(k => k.startsWith('snas_attempt_'));
+
+document.getElementById('listBtn').onclick = () => {
+  const ks = attemptKeys();
+  if (ks.length===0) log('No attempt keys found.');
+  else { log('Attempt keys:'); ks.forEach(k => log('  ' + k)); }
+};
+
+document.getElementById('clearAllBtn').onclick = () => {
+  const ks = attemptKeys(); ks.forEach(k => localStorage.removeItem(k));
+  log('Removed ' + ks.length + ' attempt key(s).');
+  setTimeout(()=>location.reload(), 600);
+};
+
+document.getElementById('clearOneBtn').onclick = () => {
+  const exam = (document.getElementById('exam').value||'').trim();
+  const sid  = (document.getElementById('sid').value||'').trim();
+  if(!exam || !sid){ alert('Enter both Exam Code and Student Number'); return; }
+  const key = `snas_attempt_${exam}_${sid}`;
+  if(localStorage.getItem(key)!=null){ localStorage.removeItem(key); log('Removed: '+key); }
+  else { log('Not found: '+key); }
+};
+
+document.getElementById('clearExamBtn').onclick = () => {
+  const exam = (document.getElementById('exam').value||'').trim();
+  if(!exam){ alert('Enter Exam Code'); return; }
+  const ks = attemptKeys().filter(k => k.startsWith('snas_attempt_' + exam + '_'));
+  ks.forEach(k => localStorage.removeItem(k));
+  log('Removed ' + ks.length + ' key(s) for Exam Code ' + exam);
+};
+</script>
+</body>
+</html>
