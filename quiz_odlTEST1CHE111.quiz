@@ -1,7 +1,7 @@
 {
   "meta": {
     "app": "SNAS Assessment (Viewer)",
-    "savedAt": "2025-10-17T21:49:24.419Z",
+    "savedAt": "2025-10-17T22:01:29.227Z",
     "version": 1
   },
   "defaultMins": 1,
@@ -12,8 +12,8 @@
     "beepLast5": true,
     "examCode": "2225",
     "availDate": "2025-10-18",
-    "availStart": "09:00",
-    "availEnd": "10:50",
+    "availStart": "09:30",
+    "availEnd": "11:10",
     "answerGridUrl": "https://docs.google.com/forms/d/e/1FAIpQLSf_7BLAGgPr2xWX7huM4ZSbgsWlZMlHnnJbi7ALuxAbaZ9vQA/viewform?usp=header"
   },
   "items": [
