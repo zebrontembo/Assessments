@@ -10,7 +10,7 @@
     "singleAttempt": true,
     "violations": 2,
     "beepLast5": true,
-    "examCode": "",
+    "examCode": "odltest1",
     "availDate": "2025-10-17",
     "availStart": "09:00",
     "availEnd": "00:50",
