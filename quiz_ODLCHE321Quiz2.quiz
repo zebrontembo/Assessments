@@ -12,8 +12,8 @@
     "beepLast5": true,
     "examCode": "321",
     "availDate": "2025-11-04",
-    "availStart": "21:00",
-    "availEnd": "23:30",
+    "availStart": "22:00",
+    "availEnd": "23:40",
     "answerGridUrl": "https://docs.google.com/forms/d/e/1FAIpQLSdlhr78BBjoPceVGvp0ml4HvyK6_ljvPBZ4WwpqoRNnw-2TnQ/viewform?usp=publish-editor"
   },
   "items": [
