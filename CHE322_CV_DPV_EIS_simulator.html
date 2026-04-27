@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DPV / CV / EIS Thesis Simulator</title>
+<style>
+  :root{
+    --bg:#f4f7fc;
+    --panel:#ffffff;
+    --panel2:#f7faff;
+    --ink:#122033;
+    --muted:#5e718d;
+    --accent:#2f6fe4;
+    --accent2:#0f9d8a;
+    --warn:#c57a16;
+    --red:#c94b4b;
+    --green:#2f8f57;
+    --grid:rgba(18,32,51,0.10);
+    --line:#29415f;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Inter,Segoe UI,Arial,sans-serif;
+    background:linear-gradient(180deg,#f8fbff,#eef4fb 45%,#f4f7fc);
+    color:var(--ink);
+  }
+  .wrap{
+    max-width:1500px;
+    margin:0 auto;
+    padding:20px;
+  }
+  h1{font-size:28px;margin:0 0 8px}
+  .sub{color:var(--muted);margin-bottom:16px;line-height:1.45}
+  .grid{
+    display:grid;
+    grid-template-columns:360px 1fr;
+    gap:16px;
+  }
+  .panel{
+    background:rgba(255,255,255,.98);
+    border:1px solid rgba(18,32,51,.10);
+    border-radius:18px;
+    padding:16px;
+    box-shadow:0 10px 24px rgba(18,32,51,.08);
+    max-height:calc(100vh - 40px);
+    overflow-y:auto;
+    scrollbar-width:thin;
+  }
+  .controls{position:sticky;top:12px;height:fit-content}
+  .section-title{
+    font-size:13px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:12px 0 8px;
+  }
+  .preset-grid{
+    display:grid;
+    gap:10px;
+  }
+  .preset{
+    background:var(--panel2);
+    border:1px solid rgba(255,255,255,.08);
+    padding:12px;
+    border-radius:14px;
+    cursor:pointer;
+  }
+  .preset.active{outline:2px solid var(--accent)}
+  .preset b{display:block;margin-bottom:4px}
+  .preset small{color:var(--muted);line-height:1.35;display:block}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .tab{
+    border:1px solid rgba(18,32,51,.10);border-radius:999px;padding:9px 14px;background:var(--panel2);color:var(--ink);cursor:pointer
+  }
+  .tab.active{background:var(--accent);color:#061226;font-weight:700}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+  select{
+    width:100%;
+    margin-bottom:12px;
+  }
+  input[type="number"]{
+    width:100%;
+    margin-bottom:12px;
+  }
+  select,input[type="number"]{
+    width:100%;background:#ffffff;color:var(--ink);border:1px solid rgba(18,32,51,.14);
+    border-radius:10px;padding:10px 12px;
+  }
+  .readout{font-size:12px;color:var(--ink);margin-top:-8px;margin-bottom:10px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .viz-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+  .badge{padding:6px 10px;border-radius:999px;background:rgba(114,167,255,.14);color:#bfd5ff;font-size:12px}
+  .plot-wrap{margin-top:12px;background:#ffffff;border-radius:16px;padding:10px;border:1px solid rgba(18,32,51,.10)}
+  svg{width:100%;height:auto;display:block}
+  .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+  .metric{background:var(--panel2);border-radius:14px;padding:10px;border:1px solid rgba(18,32,51,.10);max-height:200px;overflow-y:auto;scrollbar-width:thin}
+  .metric .k{font-size:12px;color:var(--muted)}
+  .metric .v{font-size:20px;font-weight:700;margin-top:4px}
+  .notes{margin-top:14px;display:grid;grid-template-columns:1.2fr .8fr;gap:12px}
+  .note-box{background:var(--panel2);border-radius:14px;padding:12px;border:1px solid rgba(18,32,51,.10);max-height:320px;overflow-y:auto;scrollbar-width:thin}
+  ul{margin:8px 0 0 18px;padding:0}
+  li{margin-bottom:6px;line-height:1.4}
+  .foot{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.45}
+  .mini{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+  .mini .metric .v{font-size:16px}
+  .buttonbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  button.secondary{
+    border:1px solid rgba(18,32,51,.10);border-radius:10px;padding:9px 12px;background:var(--panel2);color:var(--ink);cursor:pointer
+  }
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+  .legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .legend span[data-color]::before{background:var(--legend-color)}
+  .l1::before{background:var(--accent)}
+  .l2::before{background:var(--accent2)}
+  .l3::before{background:var(--warn)}
+  .mode-info{margin:10px 0 0;background:var(--panel2);border:1px solid rgba(18,32,51,.10);border-radius:14px;padding:12px;color:var(--ink)}
+  .mode-info b{display:block;margin-bottom:4px;font-size:13px}
+  .mode-info small{display:block;color:var(--muted);line-height:1.45}
+
+  .panel::-webkit-scrollbar,.preset::-webkit-scrollbar,.metric::-webkit-scrollbar,.note-box::-webkit-scrollbar{width:10px}
+  .panel::-webkit-scrollbar-thumb,.preset::-webkit-scrollbar-thumb,.metric::-webkit-scrollbar-thumb,.note-box::-webkit-scrollbar-thumb{background:rgba(47,111,228,.28);border-radius:999px}
+  .panel::-webkit-scrollbar-track,.preset::-webkit-scrollbar-track,.metric::-webkit-scrollbar-track,.note-box::-webkit-scrollbar-track{background:rgba(18,32,51,.06);border-radius:999px}
+  @media (max-width: 1100px){
+    .grid{grid-template-columns:1fr}
+    .controls{position:relative;top:auto}
+    .metrics,.notes,.mini{grid-template-columns:1fr 1fr}
+  }
+  @media (max-width: 760px){
+    .metrics,.notes,.mini,.row2{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Electrochemical Technique Simulator</h1>
+  <div class="sub">Interactive teaching app for <b>CV</b>, <b>DPV</b>, and <b>EIS</b> using parameter presets abstracted from the three uploaded theses. It is designed for <i>understanding trends and mechanisms</i>, not for reproducing raw experimental traces.</div>
+
+  <div class="grid">
+    <div class="panel controls">
+      <div class="section-title">Thesis preset</div>
+      <div class="preset-grid" id="presetGrid"></div>
+
+      <div class="section-title">Technique</div>
+      <div class="tabs" id="tabs"></div>
+      <div class="mode-info" id="modeInfo" style="display:none"></div>
+
+      <div class="section-title">Experiment state</div>
+      <select id="stage"></select>
+
+      <div class="section-title">Core controls</div>
+      <label>Analyte concentration</label>
+      <input id="conc" type="number" min="0.1" max="100" step="0.1" />
+      <div class="readout" id="concVal"></div>
+
+      <label>Scan rate / pulse progression factor</label>
+      <input id="scan" type="number" min="1" max="800" step="1" />
+      <div class="readout" id="scanVal"></div>
+
+      <div class="row2">
+        <div>
+          <label>Scan voltage start</label>
+          <input id="vStart" type="number" min="-2" max="2" step="0.01" />
+          <div class="readout" id="vStartVal"></div>
+        </div>
+        <div>
+          <label>Scan voltage end</label>
+          <input id="vEnd" type="number" min="-2" max="2" step="0.01" />
+          <div class="readout" id="vEndVal"></div>
+        </div>
+      </div>
+
+      <label>Recognition / electrocatalytic factor</label>
+      <input id="recognition" type="number" min="0.2" max="2.5" step="0.01" />
+      <div class="readout" id="recognitionVal"></div>
+
+      <label>Charge-transfer resistance contribution</label>
+      <input id="rct" type="number" min="10" max="3500" step="10" />
+      <div class="readout" id="rctVal"></div>
+
+      <label>Warburg / diffusion contribution</label>
+      <input id="warburg" type="number" min="5" max="2500" step="5" />
+      <div class="readout" id="warburgVal"></div>
+
+      <div id="electrochemParams">
+        <div class="section-title">Electrochemical parameters</div>
+        <label>Pulse amplitude</label>
+        <input id="pulseAmp" type="number" min="5" max="150" step="1" />
+        <div class="readout" id="pulseAmpVal"></div>
+
+        <label>Step potential</label>
+        <input id="stepPot" type="number" min="1" max="20" step="0.5" />
+        <div class="readout" id="stepPotVal"></div>
+
+        <label>Double-layer capacitance (µF, conceptual)</label>
+        <input id="cdl" type="number" min="1" max="150" step="1" />
+        <div class="readout" id="cdlVal"></div>
+
+        <label>Solution resistance</label>
+        <input id="rs" type="number" min="1" max="500" step="1" />
+        <div class="readout" id="rsVal"></div>
+
+        <label>Electron transfer number</label>
+        <select id="electronCount">
+          <option value="1">1-electron process</option>
+          <option value="2">2-electron process</option>
+        </select>
+        <div class="readout" id="electronCountVal"></div>
+      </div>
+
+      <div class="buttonbar">
+        <button class="secondary" id="resetBtn">Reset preset</button>
+        <button class="secondary" id="calBtn">Show DPV calibration</button>
+        <button class="secondary" id="saveOverlayBtn">Save Overlay</button>
+        <button class="secondary" id="clearOverlayBtn">Clear Overlays</button>
+        <button class="secondary" id="runBtn">Run Simulation</button>
+      </div>
+      <div class="foot">
+        Interpretation rule of thumb:<br>
+        • <b>CV</b>: larger peak current = faster interfacial electron transfer / larger electroactive area.<br>
+        • <b>DPV</b>: larger ΔI peak = higher sensitivity to concentration changes.<br>
+        • <b>EIS</b>: larger semicircle = larger <i>R<sub>ct</sub></i>; longer 45° tail = stronger diffusion / Warburg effect.
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="viz-head">
+        <div>
+          <div id="title" style="font-size:22px;font-weight:800"></div>
+          <div id="subtitle" class="sub" style="margin:6px 0 0"></div>
+        </div>
+        <div class="badge" id="modeBadge"></div>
+      </div>
+
+      <div class="plot-wrap">
+        <svg id="plot" viewBox="0 0 980 520" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+      <div class="legend" id="legend"></div>
+
+      <div class="metrics">
+        <div class="metric"><div class="k">Peak / arc interpretation</div><div class="v" id="m1">–</div></div>
+        <div class="metric"><div class="k">Sensitivity cue</div><div class="v" id="m2">–</div></div>
+        <div class="metric"><div class="k">Dominant process</div><div class="v" id="m3">–</div></div>
+        <div class="metric"><div class="k">Thesis-style reading</div><div class="v" id="m4">–</div></div>
+      </div>
+
+      <div class="notes">
+        <div class="note-box">
+          <div class="section-title" style="margin-top:0">How to read this trace</div>
+          <div id="explain"></div>
+        </div>
+        <div class="note-box">
+          <div class="section-title" style="margin-top:0">Preset facts behind the simulation</div>
+          <div id="presetFacts"></div>
+          <div class="mini">
+            <div class="metric"><div class="k">Reference setup</div><div class="v" id="mini1">–</div></div>
+            <div class="metric"><div class="k">Typical range</div><div class="v" id="mini2">–</div></div>
+            <div class="metric"><div class="k">Reported figure</div><div class="v" id="mini3">–</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="foot">This simulator compresses the theses into controllable mechanistic trends: diffusion-controlled CV current scaling, pulse-enhanced DPV peak isolation, Randles-like EIS behavior with optional Warburg dominance, and thesis-aligned QCM mass-sensitive frequency response for the vitamin D preset.</div>
+    </div>
+  </div>
+</div>
+<script>
+const presets = {
+  vitamin: {
+    name: 'Vitamin D₃ MIP / Au / QCM-EIS-CV',
+    short: 'Vitamin D thesis preset',
+    subtitle: 'poly(4-vinylpyridine) MIP/NIP on Au; CV-selected electropolymerization; EIS indicated mass-transfer/Warburg dominance after vitamin D₃ exposure.',
+    facts: [
+      'Electropolymerization preset: 10 cycles, about −0.1 to 1.3 V, 5 mV s⁻¹.',
+      'Sensing exposure in PBS:MeOH (90:10), vitamin D₃ concentrations up to 1.0 mg L⁻¹.',
+      'EIS condition abstracted from thesis: 10 mV AC, 100 kHz to 0.1 Hz.',
+      'Interpretation target: after vitamin D₃ sorption, redox peaks decrease and the diffusion tail becomes more prominent.'
+    ],
+    minis:['Au | Ag/AgCl | Pt','0.10–1.0 mg L⁻¹','QCM detected 0.0100 mg L⁻¹'],
+    defaultTechnique:'EIS',
+    stageOptions:['NIP film','MIP film','After vitamin D₃ sorption','Repeated OC/EIS cycles'],
+    defaults:{conc:1.0,scan:50,vStart:-0.25,vEnd:0.85,recognition:1.55,rct:320,warburg:1250,pulseAmp:50,stepPot:5,cdl:18,rs:40,electronCount:1},
+  },
+  tyrosine: {
+    name: 'Tyrosine / ClC₄-TiO₂ / GCE',
+    short: 'Tyrosine thesis preset',
+    subtitle: 'direct electrochemical sensing on ClC₄/TiO₂-modified GCE; CV/EIS used to show enhanced conductivity and DPV used for quantification.',
+    facts: [
+      'CV/EIS characterization used 5 mM [Fe(CN)₆]³⁻/⁴⁻ in 0.1 M KCl at 50 mV s⁻¹.',
+      'PBS pH 3 was the favorable medium used for quantification trends in the thesis.',
+      'Modified electrode area increased from about 0.03 cm² (bare GCE) to 0.04 cm².',
+      'Interpretation target: modification increases peak current and reduces effective interfacial resistance; DPV gives the analytical peak.'
+    ],
+    minis:['GCE + ClC₄/TiO₂','0.8–34.1 μM','LOD 0.0058 μM'],
+    defaultTechnique:'DPV',
+    stageOptions:['Bare GCE','Modified ClC₄/TiO₂/GCE','Higher tyrosine concentration'],
+    defaults:{conc:5,scan:50,vStart:-0.10,vEnd:0.90,recognition:1.35,rct:180,warburg:220,pulseAmp:55,stepPot:4,cdl:34,rs:25,electronCount:1},
+  },
+  antiviral: {
+    name: 'Antiviral drug MIP / GCE',
+    short: 'Antiviral MIP thesis preset',
+    subtitle: 'surface-imprinted GCE sensors for ACV, LPV, and FPV; CV/EIS monitor polymerization, extraction, and rebinding while DPV provides ultrasensitive quantification.',
+    facts: [
+      'The thesis compares photopolymerization, thermal polymerization, and electropolymerization MIP routes on GCE.',
+      'CV and EIS trend: polymerization raises Rct, extraction lowers it, rebinding raises it again.',
+      'ACV example reported an LOD in the 10⁻¹³ M range; LPV and FPV examples had pM-level linear ranges.',
+      'Interpretation target: MIP layer behaves as an insulating barrier until template removal opens conductive cavities.'
+    ],
+    minis:['GCE + MIP film','10⁻¹²–10⁻¹⁰ M','ACV LOD 7.15×10⁻¹³ M'],
+    defaultTechnique:'CV',
+    stageOptions:['Bare electrode','After polymerization','After extraction','After rebinding'],
+    defaults:{conc:0.02,scan:100,vStart:-0.25,vEnd:0.85,recognition:1.75,rct:1200,warburg:180,pulseAmp:45,stepPot:3,cdl:12,rs:35,electronCount:1},
+  }
+};
+
+const state = {
+  presetKey:'vitamin',
+  technique:'EIS',
+  showCalibration:false,
+  animateOnDraw:false,
+  hasRun:false,
+  overlays: [],
+  overlayPalette: ['#d1495b','#2a9d8f','#e76f51','#6c5ce7','#f4a261','#118ab2','#8d99ae','#ef476f'],
+};
+
+const els = {};
+['presetGrid','tabs','stage','conc','scan','vStart','vEnd','recognition','rct','warburg','pulseAmp','stepPot','cdl','rs','electronCount','title','subtitle','modeBadge','plot','legend','m1','m2','m3','m4','explain','presetFacts','mini1','mini2','mini3','concVal','scanVal','vStartVal','vEndVal','recognitionVal','rctVal','warburgVal','pulseAmpVal','stepPotVal','cdlVal','rsVal','electronCountVal','dpvOnly','eisOnly','resetBtn','calBtn','saveOverlayBtn','clearOverlayBtn','runBtn','modeInfo']
+  .forEach(id=>els[id]=document.getElementById(id));
+
+function fmt(x, digits=2){
+  if (Math.abs(x) >= 1000 || (Math.abs(x) < 0.01 && x !== 0)) return x.toExponential(2);
+  return Number(x).toFixed(digits);
+}
+
+function init(){
+  renderPresetCards();
+  renderTabs();
+  attachEvents();
+  applyPreset('vitamin');
+}
+
+function renderPresetCards(){
+  els.presetGrid.innerHTML='';
+  Object.entries(presets).forEach(([key,p])=>{
+    const d=document.createElement('div');
+    d.className='preset' + (state.presetKey===key?' active':'');
+    d.innerHTML=`<b>${p.short}</b><small>${p.subtitle}</small>`;
+    d.onclick=()=>applyPreset(key);
+    els.presetGrid.appendChild(d);
+  });
+}
+
+function renderTabs(){
+  els.tabs.innerHTML='';
+  ['CV','DPV','EIS', ...(state.presetKey==='vitamin' ? ['QCM'] : [])].forEach(t=>{
+    const b=document.createElement('button');
+    b.className='tab'+(state.technique===t?' active':'');
+    b.textContent=t;
+    b.onclick=()=>{ state.technique=t; state.hasRun=false; renderTabs(); updateUI(); draw(); };
+    els.tabs.appendChild(b);
+  });
+}
+
+function applyPreset(key){
+  state.presetKey=key;
+  const p=presets[key];
+  state.technique=p.defaultTechnique;
+  Object.entries(p.defaults).forEach(([k,v])=> els[k].value=v);
+  els.stage.innerHTML = p.stageOptions.map(s=>`<option>${s}</option>`).join('');
+  state.overlays = [];
+  renderPresetCards();
+  renderTabs();
+  state.hasRun=false;
+  updateUI();
+  draw();
+}
+
+function attachEvents(){
+  ['stage','conc','scan','vStart','vEnd','recognition','rct','warburg','pulseAmp','stepPot','cdl','rs','electronCount'].forEach(id=>{
+    els[id].addEventListener('input',()=>{ state.hasRun=false; updateUI(); draw(); });
+    els[id].addEventListener('change',()=>{ state.hasRun=false; updateUI(); draw(); });
+  });
+  els.resetBtn.onclick=()=>applyPreset(state.presetKey);
+  els.calBtn.onclick=()=>{ state.showCalibration=!state.showCalibration; draw(); };
+  els.saveOverlayBtn.onclick=()=>saveOverlay();
+  els.clearOverlayBtn.onclick=()=>{ state.overlays=[]; draw(); };
+  els.runBtn.onclick=()=>runSimulation();
+}
+
+function currentOverlayData(){
+  if(state.technique==='CV'){
+    const cv=generateCV();
+    return {
+      technique:'CV',
+      presetKey:state.presetKey,
+      stage:getParams().stage,
+      series:[
+        {name:'Overlay oxidation',pts:cv.forwardPts},
+        {name:'Overlay reduction',pts:cv.reversePts}
+      ]
+    };
+  }
+  if(state.technique==='DPV'){
+    const dpv=generateDPV();
+    return {
+      technique:'DPV',
+      presetKey:state.presetKey,
+      stage:getParams().stage,
+      series:[{name:'Overlay DPV',pts:dpv.pts}]
+    };
+  }
+  if(state.technique==='EIS'){
+    const eis=generateEIS();
+    return {
+      technique:'EIS',
+      presetKey:state.presetKey,
+      stage:getParams().stage,
+      series:[{name:'Overlay Nyquist',pts:eis.pts}]
+    };
+  }
+  if(state.technique==='QCM'){
+    const qcm=generateQCM();
+    return {
+      technique:'QCM',
+      presetKey:state.presetKey,
+      stage:getParams().stage,
+      series:[{name:'Overlay QCM response',pts:qcm.pts}]
+    };
+  }
+  return null;
+}
+
+function saveOverlay(){
+  const overlay=currentOverlayData();
+  if(!overlay) return;
+  const sameTechniqueCount = state.overlays.filter(o=>o.technique===overlay.technique).length;
+  if(sameTechniqueCount >= 5){
+    alert(`You can save up to 5 ${overlay.technique} overlays at a time. Clear overlays to add new ones.`);
+    return;
+  }
+  const color = state.overlayPalette[sameTechniqueCount % state.overlayPalette.length];
+  overlay.color = color;
+  overlay.label = `${overlay.technique} overlay ${sameTechniqueCount + 1}`;
+  state.overlays.push(overlay);
+  draw();
+}
+
+function updateUI(){
+  const pk=presets[state.presetKey];
+  els.title.textContent=pk.name;
+  els.subtitle.textContent=pk.subtitle;
+  els.modeBadge.textContent=`${state.technique} simulator`;
+  updateModeInfo();
+  els.presetFacts.innerHTML = generatePresetInterpretation();
+  [els.mini1.textContent,els.mini2.textContent,els.mini3.textContent] = pk.minis;
+  const unitConc = state.presetKey==='vitamin' ? 'mg L⁻¹' : (state.presetKey==='tyrosine' ? 'μM' : 'nM (conceptual control)');
+  els.concVal.textContent = `${fmt(+els.conc.value)} ${unitConc}`;
+  els.scanVal.textContent = `${fmt(+els.scan.value)} mV s⁻¹`;
+  els.vStartVal.textContent = `${fmt(+els.vStart.value,2)} V`;
+  els.vEndVal.textContent = `${fmt(+els.vEnd.value,2)} V`;
+  els.recognitionVal.textContent = fmt(+els.recognition.value);
+  els.rctVal.textContent = `${fmt(+els.rct.value)} Ω`;
+  els.warburgVal.textContent = `${fmt(+els.warburg.value)} Ω·s⁻½`;
+  els.pulseAmpVal.textContent = `${fmt(+els.pulseAmp.value)} mV`;
+  els.stepPotVal.textContent = `${fmt(+els.stepPot.value)} mV`;
+  els.cdlVal.textContent = `${fmt(+els.cdl.value)} µF`;
+  els.rsVal.textContent = `${fmt(+els.rs.value)} Ω`;
+  els.electronCountVal.textContent = `${+els.electronCount.value}-electron voltammogram mode`;
+}
+
+
+function updateModeInfo(){
+  if(!els.modeInfo) return;
+  if(state.technique==='CV' || state.technique==='DPV'){
+    const modeTitle = state.technique==='CV' ? 'CV and DPV use the same potentiostat' : 'DPV and CV use the same potentiostat';
+    const modeDetail = state.technique==='CV'
+      ? 'This mode uses a cyclic potential sweep to show oxidation and reduction behavior. The instrument is the same as DPV; only the software waveform changes.'
+      : 'This mode uses differential pulses on a staircase potential for higher analytical sensitivity. The instrument is the same as CV; only the software waveform changes.';
+    els.modeInfo.style.display='block';
+    els.modeInfo.innerHTML=`<b>${modeTitle}</b><small>${modeDetail}</small>`;
+  } else {
+    els.modeInfo.style.display='none';
+    els.modeInfo.innerHTML='';
+  }
+}
+
+function getParams(){
+  return {
+    stage: els.stage.value,
+    c: +els.conc.value,
+    scan: +els.scan.value,
+    vStart: +els.vStart.value,
+    vEnd: +els.vEnd.value,
+    rec: +els.recognition.value,
+    rct: +els.rct.value,
+    war: +els.warburg.value,
+    amp: +els.pulseAmp.value,
+    step: +els.stepPot.value,
+    cdl: +els.cdl.value*1e-6,
+    rs: +els.rs.value,
+    electronCount: +els.electronCount.value
+  };
+}
+
+function stageModifiers(params){
+  const s = params.stage;
+  let surface=1, conductivity=1, barrier=1, peakShift=0, warMult=1, recMult=1;
+  if (state.presetKey==='vitamin'){
+    if (s==='NIP film'){surface=1.0; conductivity=0.95; barrier=1.0; warMult=1.0; recMult=0.8;}
+    if (s==='MIP film'){surface=1.12; conductivity=1.10; barrier=0.92; warMult=1.15; recMult=1.2;}
+    if (s==='After vitamin D₃ sorption'){surface=1.05; conductivity=0.72; barrier=1.25; warMult=1.65; recMult=1.35; peakShift=0.02;}
+    if (s==='Repeated OC/EIS cycles'){surface=0.98; conductivity=0.75; barrier=1.15; warMult=1.75; recMult=1.15; peakShift=0.01;}
+  }
+  if (state.presetKey==='tyrosine'){
+    if (s==='Bare GCE'){surface=0.85; conductivity=0.82; barrier=1.08; warMult=1.0; recMult=0.8;}
+    if (s==='Modified ClC₄/TiO₂/GCE'){surface=1.15; conductivity=1.30; barrier=0.78; warMult=0.85; recMult=1.15;}
+    if (s==='Higher tyrosine concentration'){surface=1.15; conductivity=1.22; barrier=0.82; warMult=0.9; recMult=1.45; peakShift=0.015;}
+  }
+  if (state.presetKey==='antiviral'){
+    if (s==='Bare electrode'){surface=1.0; conductivity=1.25; barrier=0.7; warMult=0.9; recMult=0.7;}
+    if (s==='After polymerization'){surface=0.92; conductivity=0.60; barrier=1.75; warMult=0.95; recMult=1.0;}
+    if (s==='After extraction'){surface=1.08; conductivity=1.05; barrier=0.92; warMult=1.05; recMult=1.4;}
+    if (s==='After rebinding'){surface=1.0; conductivity=0.74; barrier=1.55; warMult=1.0; recMult=1.7; peakShift=0.02;}
+  }
+  return {surface,conductivity,barrier,peakShift,warMult,recMult};
+}
+
+function generateCV(){
+  const p=getParams();
+  const m=stageModifiers(p);
+  const E1 = Math.min(p.vStart, p.vEnd);
+  const E2 = Math.max(p.vStart, p.vEnd);
+  const n=520;
+  const pts=[];
+  const forwardPts=[];
+  const reversePts=[];
+  const span = Math.max(E2-E1, 0.2);
+  const electronFactor = Math.pow(p.electronCount, 1.5);
+  const ampBase = 22*Math.sqrt(p.scan/50)*Math.log10(p.c+1.35)*m.surface*m.conductivity*p.rec*m.recMult*electronFactor;
+  const duckFactor = state.presetKey==='antiviral' ? 1.05 : (state.presetKey==='tyrosine' ? 0.95 : 1.0);
+  const sigmaOx = 0.07 + 0.012*span + 0.014*((p.war*m.warMult)/2500);
+  const sigmaRed = 0.075 + 0.012*span + 0.016*((p.war*m.warMult)/2500);
+  const centerBase = E1 + span*0.58 + m.peakShift;
+  const electronShift = p.electronCount===2 ? 0.018 : 0;
+  const baseSep = 0.14 + 0.12*((p.rct*m.barrier)/3500) + (state.presetKey==='tyrosine' ? 0.018 : 0);
+  const primarySep = Math.min(span*0.55, baseSep*(p.electronCount===2 ? 0.82 : 1.0));
+  const capBase = (1.8 + 0.010*p.scan)*m.conductivity;
+  const slope = 2.8/span;
+
+  const oxidationPeaks = [];
+  const reductionPeaks = [];
+
+  if(p.electronCount===2){
+    const resolvedGap = Math.max(0.18, Math.min(span*0.34, 0.24 + 0.00016*p.scan + 0.024*((p.rct*m.barrier)/3500)));
+    const Epa1 = Math.min(E2-0.24, Math.max(E1+0.08, centerBase - resolvedGap/2));
+    const Epa2 = Math.min(E2-0.06, Math.max(Epa1+0.14, centerBase + resolvedGap/2 + electronShift));
+    const Epc1 = Math.max(E1+0.05, Epa1 - primarySep);
+    const Epc2 = Math.max(Epc1+0.12, Math.min(E2-0.04, Epa2 - primarySep*0.92));
+    const oxAmp1 = ampBase*0.62*duckFactor;
+    const oxAmp2 = ampBase*0.78*duckFactor;
+    const redAmp1 = oxAmp1*0.86;
+    const redAmp2 = oxAmp2*0.84;
+    const sigmaOx1 = sigmaOx*0.74;
+    const sigmaOx2 = sigmaOx*0.80;
+    const sigmaRed1 = sigmaRed*0.76;
+    const sigmaRed2 = sigmaRed*0.82;
+    oxidationPeaks.push(
+      {label:'Epa1', E:Epa1, amp:oxAmp1, sigma:sigmaOx1},
+      {label:'Epa2', E:Epa2, amp:oxAmp2, sigma:sigmaOx2}
+    );
+    reductionPeaks.push(
+      {label:'Epc1', E:Epc1, amp:redAmp1, sigma:sigmaRed1},
+      {label:'Epc2', E:Epc2, amp:redAmp2, sigma:sigmaRed2}
+    );
+  } else {
+    const oxAmp = ampBase*duckFactor;
+    const redAmp = ampBase*0.88*duckFactor;
+    const Epa = Math.min(E2-0.05, Math.max(E1+0.05, centerBase + 0.00018*p.scan + electronShift));
+    const Epc = Math.max(E1+0.04, Epa - primarySep);
+    oxidationPeaks.push({label:'Epa', E:Epa, amp:oxAmp, sigma:sigmaOx});
+    reductionPeaks.push({label:'Epc', E:Epc, amp:redAmp, sigma:sigmaRed});
+  }
+
+  for(let i=0;i<n;i++){
+    const t=i/(n-1);
+    const E=E1 + (E2-E1)*t;
+    const ox = oxidationPeaks.reduce((sum,peak)=>sum + peak.amp*Math.exp(-Math.pow(E-peak.E,2)/(2*peak.sigma*peak.sigma)),0);
+    const base = capBase + slope*(E-(E1+E2)/2);
+    const iCur = base + ox;
+    forwardPts.push([E,iCur]);
+    pts.push([E,iCur]);
+  }
+  for(let i=0;i<n;i++){
+    const t=i/(n-1);
+    const E=E2 - (E2-E1)*t;
+    const red = reductionPeaks.reduce((sum,peak)=>sum + peak.amp*Math.exp(-Math.pow(E-peak.E,2)/(2*peak.sigma*peak.sigma)),0);
+    const base = -capBase*0.92 + slope*0.55*(E-(E1+E2)/2);
+    const iCur = base - red;
+    reversePts.push([E,iCur]);
+    pts.push([E,iCur]);
+  }
+
+  const peakCurrent = Math.max(...oxidationPeaks.map(p=>p.amp));
+  const redPeak = Math.max(...reductionPeaks.map(p=>p.amp));
+  const Epa = oxidationPeaks[oxidationPeaks.length-1].E;
+  const Epc = reductionPeaks[0].E;
+  const sep = Epa - Epc;
+  return {pts, forwardPts, reversePts, peakCurrent, oxPeak:peakCurrent, redPeak, sep, Epa, Epc, E1, E2, oxidationPeaks, reductionPeaks};
+}
+
+function generateDPV(){
+  const p=getParams();
+  const m=stageModifiers(p);
+  const pts=[];
+  const n=260;
+  const Emin=Math.min(p.vStart, p.vEnd), Emax=Math.max(p.vStart, p.vEnd);
+  const width = 0.045 + 0.002*(20-p.step) + 0.00008*p.rct*m.barrier;
+  const centerGuess = state.presetKey==='tyrosine' ? 0.56 : 0.48 + m.peakShift;
+  const center = Math.min(Emax-0.03, Math.max(Emin+0.03, centerGuess));
+  const height = (22 + 0.55*p.amp + 0.18*p.step) * Math.log10(p.c+1.3) * p.rec * m.recMult * m.surface / (0.75 + 0.0005*p.rct*m.barrier);
+  for(let i=0;i<n;i++){
+    const E=Emin + (Emax-Emin)*i/(n-1);
+    const baseline = 3 + 0.4*Math.sin(E*8) + 0.02*i/n*p.step;
+    const peak = height*Math.exp(-Math.pow(E-center,2)/(2*width*width));
+    pts.push([E,baseline+peak]);
+  }
+  return {pts, peakHeight:height, center, width};
+}
+
+function generateEIS(){
+  const p=getParams();
+  const m=stageModifiers(p);
+  const pts=[];
+  const fMin=0.1, fMax=100000;
+  const n=150;
+  const Rs = p.rs;
+  const Rct = p.rct*m.barrier;
+  const Cdl = p.cdl*(1/m.conductivity);
+  const sigma = p.war*m.warMult;
+  for(let i=0;i<n;i++){
+    const lf = Math.log10(fMax) + (Math.log10(fMin)-Math.log10(fMax))*i/(n-1);
+    const f=Math.pow(10,lf);
+    const w=2*Math.PI*f;
+    const a=w*Rct*Cdl;
+    const zct_re = Rct/(1+a*a);
+    const zct_im = -Rct*a/(1+a*a);
+    const wRe = sigma/Math.sqrt(2*w);
+    const wIm = -sigma/Math.sqrt(2*w);
+    const zr = Rs + zct_re + wRe;
+    const zi = -(zct_im + wIm); // plot -Zim positive
+    pts.push([zr,zi]);
+  }
+  return {pts, Rs, Rct, sigma, Cdl};
+}
+
+function generateQCM(){
+  const p=getParams();
+  const m=stageModifiers(p);
+  const pts=[];
+  const n=220;
+  const tMax = 12;
+  const cEff = Math.max(p.c, 0.0001);
+  const responseScale = Math.log10(cEff*100 + 1.15);
+  const bindingStrength = Math.max(0.35, p.rec*m.recMult*m.surface);
+  const kObs = 0.10 + 0.025*bindingStrength + 0.00006*(p.war*m.warMult) + 0.000015*p.scan;
+  const plateauHz = (9 + 16*responseScale) * bindingStrength * (0.95 + 0.00035*(p.war*m.warMult)) / (0.9 + 0.00022*(p.rct*m.barrier));
+  const driftHz = 0.22 + 0.015*Math.max(0, p.rs-20)/10;
+  const stageFactor = state.presetKey==='vitamin'
+    ? (p.stage==='NIP film' ? 0.70 : p.stage==='MIP film' ? 1.18 : p.stage==='After vitamin D₃ sorption' ? 1.42 : 1.10)
+    : 1.0;
+  const finalShiftHz = Math.max(0.5, plateauHz*stageFactor);
+  for(let i=0;i<n;i++){
+    const time = tMax*i/(n-1);
+    const assoc = finalShiftHz*(1 - Math.exp(-kObs*time));
+    const drift = driftHz*Math.log1p(time)/Math.log(13);
+    pts.push([time, assoc + drift]);
+  }
+  const halfTarget = finalShiftHz*0.5;
+  let halfTime = pts.find(p=>p[1] >= halfTarget)?.[0] ?? tMax;
+  const sensitivityHzPerMgL = finalShiftHz/Math.max(cEff,0.0001);
+  const massNg = Math.max(0.1, finalShiftHz * 0.92);
+  const lodLine = state.presetKey==='vitamin' ? 0.0100 : null;
+  return {pts, finalShiftHz, halfTime, kObs, sensitivityHzPerMgL, massNg, lodLine};
+}
+
+
+function clampControlValue(el){
+  const min = el.min !== '' ? Number(el.min) : -Infinity;
+  const max = el.max !== '' ? Number(el.max) : Infinity;
+  let value = Number(el.value);
+  if (!Number.isFinite(value)) value = min !== -Infinity ? min : 0;
+  if (value < min) value = min;
+  if (value > max) value = max;
+  el.value = value;
+}
+
+function runSimulation(){
+  ['conc','scan','vStart','vEnd','recognition','rct','warburg','pulseAmp','stepPot','cdl','rs'].forEach(id=>clampControlValue(els[id]));
+  if (+els.vStart.value === +els.vEnd.value){
+    els.vEnd.value = Math.min(2, +els.vStart.value + 0.10);
+  }
+  updateUI();
+  state.hasRun = true;
+  state.animateOnDraw = true;
+  draw();
+}
+
+function animateSeriesPath(path, delay=0, duration=2200){
+  const totalLength = path.getTotalLength();
+  path.style.strokeDasharray = totalLength;
+  path.style.strokeDashoffset = totalLength;
+  let start = null;
+  function frame(ts){
+    if(start === null) start = ts;
+    const elapsed = ts - start;
+    if(elapsed < delay){
+      requestAnimationFrame(frame);
+      return;
+    }
+    const progress = Math.min((elapsed - delay) / duration, 1);
+    path.style.strokeDashoffset = totalLength * (1 - progress);
+    if(progress < 1){
+      requestAnimationFrame(frame);
+    } else {
+      path.style.strokeDasharray = 'none';
+      path.style.strokeDashoffset = '0';
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+function draw(){
+  const svg=els.plot;
+  svg.innerHTML='';
+  const shouldAnimate = state.animateOnDraw;
+  state.animateOnDraw = false;
+  const vb = {x:70,y:26,w:860,h:420};
+  const gridColor='rgba(18,32,51,.10)';
+
+  let series=[]; let xlab=''; let ylab=''; let metrics={}; let explanation=''; let legend=[];
+  const overlaySeries = [];
+  const overlayLegend = [];
+  if(state.technique==='CV'){
+    const cv=generateCV();
+    state.overlays.filter(o=>o.technique==='CV').forEach(o=>{
+      o.series.forEach(s=>overlaySeries.push({...s,color:o.color,overlay:true,label:o.label}));
+      overlayLegend.push({label:o.label,color:o.color});
+    });
+    series=[
+      {name:'Oxidation scan',color:getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),pts:cv.forwardPts},
+      {name:'Reduction scan',color:getComputedStyle(document.documentElement).getPropertyValue('--accent2').trim(),pts:cv.reversePts}
+    ];
+    xlab='Potential / V'; ylab='Current / a.u.';
+    metrics={m1: getParams().electronCount===2 ? `2-e⁻ | Epa1 ${fmt(cv.oxidationPeaks[0].E,3)} V | Epa2 ${fmt(cv.oxidationPeaks[1].E,3)} V` : `${getParams().electronCount}-e⁻ | Epa ${fmt(cv.Epa,3)} V | Epc ${fmt(cv.Epc,3)} V`,m2: getParams().electronCount===2 ? `Epc1 ${fmt(cv.reductionPeaks[0].E,3)} V | Epc2 ${fmt(cv.reductionPeaks[1].E,3)} V` : `ΔEp ≈ ${fmt(cv.sep,3)} V | Ipa ≈ ${fmt(cv.oxPeak,1)} | Ipc ≈ ${fmt(cv.redPeak,1)}`,m3: getParams().electronCount===2 ? 'resolved two-step two-electron redox' : (state.presetKey==='tyrosine'?'electron-transfer / area':'interfacial redox + film state'),m4: getParams().electronCount===2 ? `Ipa1 ≈ ${fmt(cv.oxidationPeaks[0].amp,1)} | Ipa2 ≈ ${fmt(cv.oxidationPeaks[1].amp,1)} | Ipc1 ≈ ${fmt(cv.reductionPeaks[0].amp,1)} | Ipc2 ≈ ${fmt(cv.reductionPeaks[1].amp,1)}` : stageCVReading()};
+    explanation = explainCV(cv);
+    legend=['Oxidation scan','Reduction scan'];
+  }
+  if(state.technique==='DPV'){
+    const dpv=generateDPV();
+    state.overlays.filter(o=>o.technique==='DPV').forEach(o=>{
+      o.series.forEach(s=>overlaySeries.push({...s,color:o.color,overlay:true,label:o.label}));
+      overlayLegend.push({label:o.label,color:o.color});
+    });
+    series=[{name:'DPV trace',color:getComputedStyle(document.documentElement).getPropertyValue('--accent2').trim(),pts:dpv.pts}];
+    if(state.showCalibration){
+      const cal = calibrationData();
+      series.push({name:'Calibration', color:getComputedStyle(document.documentElement).getPropertyValue('--warn').trim(), pts:cal, scatter:true, axis:'right'});
+    }
+    xlab='Potential / V'; ylab='ΔCurrent / a.u.';
+    metrics={m1:`Peak @ ${fmt(dpv.center,3)} V`,m2:`ΔI ≈ ${fmt(dpv.peakHeight,1)}`,m3:'pulse-isolated faradaic response',m4: stageDPVReading()};
+    explanation = explainDPV(dpv);
+    legend= state.showCalibration ? ['DPV trace','Calibration points'] : ['DPV trace'];
+  }
+  if(state.technique==='EIS'){
+    const eis=generateEIS();
+    state.overlays.filter(o=>o.technique==='EIS').forEach(o=>{
+      o.series.forEach(s=>overlaySeries.push({...s,color:o.color,overlay:true,label:o.label}));
+      overlayLegend.push({label:o.label,color:o.color});
+    });
+    series=[{name:'Nyquist',color:getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),pts:eis.pts}];
+    xlab='Z\' / Ω'; ylab='−Z\'\' / Ω';
+    metrics={m1:`Rct ≈ ${fmt(eis.Rct,0)} Ω`,m2:`σ ≈ ${fmt(eis.sigma,0)}`,m3: dominantProcess(eis),m4: stageEISReading()};
+    explanation = explainEIS(eis);
+    legend=['Nyquist'];
+  }
+  if(state.technique==='QCM'){
+    const qcm=generateQCM();
+    state.overlays.filter(o=>o.technique==='QCM').forEach(o=>{
+      o.series.forEach(s=>overlaySeries.push({...s,color:o.color,overlay:true,label:o.label}));
+      overlayLegend.push({label:o.label,color:o.color});
+    });
+    series=[{name:'QCM response',color:getComputedStyle(document.documentElement).getPropertyValue('--warn').trim(),pts:qcm.pts}];
+    xlab='Time / min'; ylab='|Δf| / Hz';
+    metrics={m1:`|Δf|max ≈ ${fmt(qcm.finalShiftHz,1)} Hz`,m2:`t½ ≈ ${fmt(qcm.halfTime,2)} min`,m3:'mass-sensitive binding response',m4: stageQCMReading()};
+    explanation = explainQCM(qcm);
+    legend=['QCM response'];
+  }
+
+  const allPts = [...overlaySeries, ...series].flatMap(s=>s.pts);
+  let xMin=Math.min(...allPts.map(p=>p[0])), xMax=Math.max(...allPts.map(p=>p[0]));
+  let yMin=Math.min(...allPts.map(p=>p[1])), yMax=Math.max(...allPts.map(p=>p[1]));
+  if (state.technique!=='EIS') { const pad=(yMax-yMin||1)*0.18; yMin-=pad; yMax+=pad; }
+  else { yMin=0; yMax*=1.08; }
+
+  function sx(x){ return vb.x + (x-xMin)/(xMax-xMin)*vb.w; }
+  function sy(y){ return vb.y + vb.h - (y-yMin)/(yMax-yMin)*vb.h; }
+  function el(name,attrs,text){
+    const e=document.createElementNS('http://www.w3.org/2000/svg',name);
+    for(const k in attrs) e.setAttribute(k,attrs[k]);
+    if(text!=null) e.textContent=text;
+    return e;
+  }
+
+  svg.appendChild(el('rect',{x:vb.x,y:vb.y,width:vb.w,height:vb.h,fill:'#ffffff',rx:14,stroke:'rgba(18,32,51,.10)'}));
+  for(let i=0;i<=6;i++){
+    const x=vb.x + i*vb.w/6;
+    const y=vb.y + i*vb.h/6;
+    svg.appendChild(el('line',{x1:x,y1:vb.y,x2:x,y2:vb.y+vb.h,stroke:gridColor}));
+    svg.appendChild(el('line',{x1:vb.x,y1:y,x2:vb.x+vb.w,y2:y,stroke:gridColor}));
+    const xv=xMin+(xMax-xMin)*i/6;
+    const yv=yMax-(yMax-yMin)*i/6;
+    svg.appendChild(el('text',{x, y:vb.y+vb.h+22, fill:'#5e718d','font-size':'12','text-anchor':'middle'}, fmt(xv, state.technique==='EIS'?0:2)));
+    svg.appendChild(el('text',{x:vb.x-12, y:y+4, fill:'#5e718d','font-size':'12','text-anchor':'end'}, fmt(yv, state.technique==='EIS'?0:1)));
+  }
+  svg.appendChild(el('text',{x:vb.x+vb.w/2,y:500,fill:'#122033','font-size':'15','text-anchor':'middle'},xlab));
+  const yl=el('text',{x:22,y:vb.y+vb.h/2,fill:'#122033','font-size':'15','text-anchor':'middle',transform:`rotate(-90 22 ${vb.y+vb.h/2})`},ylab);
+  svg.appendChild(yl);
+
+
+  if(!state.hasRun){
+    const hint = el('text',{x:vb.x+vb.w/2,y:vb.y+vb.h/2-8,fill:'#5e718d','font-size':'18','text-anchor':'middle'},'Plot is empty. Click Run Simulation to draw the trace.');
+    svg.appendChild(hint);
+    const hint2 = el('text',{x:vb.x+vb.w/2,y:vb.y+vb.h/2+20,fill:'#5e718d','font-size':'13','text-anchor':'middle'},'The selected settings are ready; the scan will appear here after the run starts.');
+    svg.appendChild(hint2);
+    const waitingLegend = state.technique==='CV' ? '<span class="l1">Oxidation scan</span><span class="l2">Reduction scan</span>' : (state.technique==='DPV' ? '<span class="l2">DPV trace</span>' : (state.technique==='EIS' ? '<span class="l1">Nyquist</span>' : '<span class="l3">QCM response</span>'));
+    const waitingOverlays = state.overlays.filter(o=>o.technique===state.technique).map(item=>`<span data-color="1" style="--legend-color:${item.color}">${item.label}</span>`).join('');
+    els.legend.innerHTML = waitingLegend + waitingOverlays;
+    els.m1.textContent='–'; els.m2.textContent='–'; els.m3.textContent='–'; els.m4.textContent='Waiting for run';
+    els.explain.innerHTML='<ul><li>The axes and selected settings are prepared, but the trace is intentionally hidden until <b>Run Simulation</b> is pressed.</li><li>This lets the voltammogram start empty and then appear in real time during the run.</li></ul>';
+    return;
+  }
+
+  [...overlaySeries, ...series].forEach((s,idx)=>{
+    if(s.scatter){
+      s.pts.forEach(p=> svg.appendChild(el('circle',{cx:sx(p[0]),cy:sy(p[1]),r:4,fill:s.color,opacity:.95}))); 
+    } else {
+      const d=s.pts.map((p,i)=>`${i?'L':'M'} ${sx(p[0])} ${sy(p[1])}`).join(' ');
+      const pathEl = el('path',{d,fill:'none',stroke:s.color,'stroke-width':s.overlay?2.5:3,'stroke-linejoin':'round','stroke-linecap':'round',opacity:s.overlay?0.85:1});
+      svg.appendChild(pathEl);
+      if(shouldAnimate && !s.overlay){
+        const overlayCount = overlaySeries.length;
+        const visibleIndex = idx - overlayCount;
+        const isSequentialCV = state.technique==='CV';
+        const duration = 2200;
+        const delay = isSequentialCV && visibleIndex===1 ? duration : 0;
+        animateSeriesPath(pathEl, delay, duration);
+      }
+    }
+  });
+
+  if(state.technique==='CV') annotateCV(svg,sx,sy,generateCV());
+  if(state.technique==='DPV') annotateDPV(svg,sx,sy,generateDPV());
+  if(state.technique==='EIS') annotateEIS(svg,sx,sy,generateEIS());
+  if(state.technique==='QCM') annotateQCM(svg,sx,sy,generateQCM());
+
+  const baseLegend = legend.map((t,i)=>`<span class="l${i+1}">${t}</span>`).join('');
+  const extraLegend = overlayLegend.map(item=>`<span data-color="1" style="--legend-color:${item.color}">${item.label}</span>`).join('');
+  els.legend.innerHTML = baseLegend + extraLegend;
+  els.m1.textContent=metrics.m1; els.m2.textContent=metrics.m2; els.m3.textContent=metrics.m3; els.m4.textContent=metrics.m4;
+  els.explain.innerHTML=explanation;
+}
+
+function annotateCV(svg,sx,sy,cv){
+  const ns='http://www.w3.org/2000/svg';
+  function t(x,y,text,size='12',anchor='start'){ const e=document.createElementNS(ns,'text'); e.setAttribute('x',x);e.setAttribute('y',y);e.setAttribute('fill','#29415f');e.setAttribute('font-size',size);e.setAttribute('text-anchor',anchor);e.textContent=text;return e; }
+  function l(x1,y1,x2,y2){ const e=document.createElementNS(ns,'line'); e.setAttribute('x1',x1);e.setAttribute('y1',y1);e.setAttribute('x2',x2);e.setAttribute('y2',y2);e.setAttribute('stroke','#ffb454');e.setAttribute('stroke-dasharray','4 4'); return e; }
+
+  if(cv.oxidationPeaks.length===2){
+    cv.oxidationPeaks.forEach((peak, idx)=>{
+      svg.appendChild(l(sx(peak.E),sy(-1000),sx(peak.E),sy(1000)));
+      svg.appendChild(t(sx(peak.E)+6,sy(peak.amp + 4) - (idx===0?10:28),`${peak.label} = ${fmt(peak.E,3)} V`));
+    });
+    cv.reductionPeaks.forEach((peak, idx)=>{
+      svg.appendChild(l(sx(peak.E),sy(-1000),sx(peak.E),sy(1000)));
+      svg.appendChild(t(sx(peak.E)+6,sy(-peak.amp*0.70)+(idx===0?14:32),`${peak.label} = ${fmt(peak.E,3)} V`));
+    });
+    const oxMidX = (sx(cv.oxidationPeaks[0].E) + sx(cv.oxidationPeaks[1].E))/2;
+    const redMidX = (sx(cv.reductionPeaks[0].E) + sx(cv.reductionPeaks[1].E))/2;
+    svg.appendChild(t(oxMidX, 44, `ΔEpa = ${fmt(cv.oxidationPeaks[1].E - cv.oxidationPeaks[0].E,3)} V`, '12', 'middle'));
+    svg.appendChild(t(redMidX, 62, `ΔEpc = ${fmt(cv.reductionPeaks[1].E - cv.reductionPeaks[0].E,3)} V`, '12', 'middle'));
+    return;
+  }
+
+  const yPeak = sy(cv.peakCurrent + 4);
+  svg.appendChild(l(sx(cv.Epa),sy(-1000),sx(cv.Epa),sy(1000)));
+  svg.appendChild(t(sx(cv.Epa)+6,yPeak-10,`Epa = ${fmt(cv.Epa,3)} V`));
+  svg.appendChild(l(sx(cv.Epc),sy(-1000),sx(cv.Epc),sy(1000)));
+  svg.appendChild(t(sx(cv.Epc)+6,sy(-cv.peakCurrent*0.65)+14,`Epc = ${fmt(cv.Epc,3)} V`));
+  const midX = (sx(cv.Epa) + sx(cv.Epc))/2;
+  svg.appendChild(t(midX, 44, `ΔEp = ${fmt(cv.sep,3)} V`, '12', 'middle'));
+}
+
+function annotateDPV(svg,sx,sy,dpv){
+  const ns='http://www.w3.org/2000/svg';
+  const peakY = Math.max(...dpv.pts.map(p=>p[1]));
+  const idx = dpv.pts.findIndex(p=>p[1]===peakY);
+  const xp=sx(dpv.pts[idx][0]), yp=sy(peakY);
+  const l=document.createElementNS(ns,'line'); l.setAttribute('x1',xp);l.setAttribute('y1',yp);l.setAttribute('x2',xp);l.setAttribute('y2',yp-55);l.setAttribute('stroke','#ffb454');l.setAttribute('stroke-dasharray','4 4'); svg.appendChild(l);
+  const txt=document.createElementNS(ns,'text'); txt.setAttribute('x',xp+6);txt.setAttribute('y',yp-62);txt.setAttribute('fill','#29415f');txt.setAttribute('font-size','12');txt.textContent='DPV peak'; svg.appendChild(txt);
+}
+
+function annotateEIS(svg,sx,sy,eis){
+  const ns='http://www.w3.org/2000/svg';
+  const p1=eis.pts[Math.floor(eis.pts.length*0.15)], p2=eis.pts[Math.floor(eis.pts.length*0.72)];
+  const a=document.createElementNS(ns,'text'); a.setAttribute('x',sx(p1[0])+8);a.setAttribute('y',sy(p1[1])-6);a.setAttribute('fill','#29415f');a.setAttribute('font-size','12'); a.textContent='Semicircle ≈ Rct'; svg.appendChild(a);
+  const b=document.createElementNS(ns,'text'); b.setAttribute('x',sx(p2[0])+8);b.setAttribute('y',sy(p2[1])-6);b.setAttribute('fill','#29415f');b.setAttribute('font-size','12'); b.textContent='45° tail ≈ Warburg'; svg.appendChild(b);
+}
+
+function annotateQCM(svg,sx,sy,qcm){
+  const ns='http://www.w3.org/2000/svg';
+  const midIndex=Math.floor(qcm.pts.length*0.45);
+  const plateau=qcm.pts[qcm.pts.length-1];
+  const mid=qcm.pts[midIndex];
+  const line=document.createElementNS(ns,'line');
+  line.setAttribute('x1',sx(mid[0])); line.setAttribute('y1',sy(mid[1]));
+  line.setAttribute('x2',sx(mid[0])); line.setAttribute('y2',sy(mid[1])-52);
+  line.setAttribute('stroke','#ffb454'); line.setAttribute('stroke-dasharray','4 4');
+  svg.appendChild(line);
+  const txt1=document.createElementNS(ns,'text');
+  txt1.setAttribute('x',sx(mid[0])+6); txt1.setAttribute('y',sy(mid[1])-58); txt1.setAttribute('fill','#29415f'); txt1.setAttribute('font-size','12');
+  txt1.textContent=`t½ ≈ ${fmt(qcm.halfTime,2)} min`;
+  svg.appendChild(txt1);
+  const txt2=document.createElementNS(ns,'text');
+  txt2.setAttribute('x',sx(plateau[0])-110); txt2.setAttribute('y',sy(plateau[1])-8); txt2.setAttribute('fill','#29415f'); txt2.setAttribute('font-size','12');
+  txt2.textContent=`|Δf|max ≈ ${fmt(qcm.finalShiftHz,1)} Hz`;
+  svg.appendChild(txt2);
+}
+
+function calibrationData(){
+  const p=getParams();
+  const m=stageModifiers(p);
+  const out=[];
+  const base = state.presetKey==='vitamin' ? [0.1,0.25,0.5,1.0] : state.presetKey==='tyrosine' ? [0.8,2,5,10,20,34] : [1,2.5,5,7.5,10,17.5];
+  base.forEach((c,i)=>{
+    const y=(8+0.55*p.amp)*Math.log10(c+1.3)*p.rec*m.recMult*m.surface/(0.75+0.0005*p.rct*m.barrier);
+    out.push([c,y*8]);
+  });
+  return out;
+}
+
+function stageCVReading(){
+  const s=els.stage.value;
+  const mode = +els.electronCount.value === 2 ? 'two-electron mode' : 'one-electron mode';
+  if(state.presetKey==='vitamin') return s.includes('sorption') ? `peaks suppressed after vitamin D₃ binding (${mode})` : `MIP gives higher redox activity than NIP (${mode})`;
+  if(state.presetKey==='tyrosine') return s.includes('Modified') ? `modifier increases electroactive area/current (${mode})` : `bare electrode gives smaller response (${mode})`;
+  return s==='After polymerization' ? `insulating layer blocks electron transfer (${mode})` : s==='After extraction' ? `cavities reopen the interface (${mode})` : s==='After rebinding' ? `target occupancy partially re-blocks the interface (${mode})` : `baseline interfacial response (${mode})`;
+}
+function stageDPVReading(){
+  if(state.presetKey==='tyrosine') return 'oxidation peak used for quantification';
+  if(state.presetKey==='vitamin') return 'conceptual only: thesis quantified vitamin D mainly by HPLC/QCM, not DPV';
+  return 'ΔI between extraction and rebinding tracks target concentration';
+}
+function stageEISReading(){
+  if(state.presetKey==='vitamin') return 'Warburg-dominant mass transfer behavior';
+  if(state.presetKey==='tyrosine') return 'modifier lowers effective interfacial resistance';
+  return 'polymerization ↑Rct, extraction ↓Rct, rebinding ↑Rct';
+}
+function stageQCMReading(){
+  if(state.presetKey==='vitamin'){
+    const s=els.stage.value;
+    if(s==='NIP film') return 'lower nonspecific frequency response';
+    if(s==='MIP film') return 'stronger imprint-driven vitamin D₃ binding';
+    if(s==='After vitamin D₃ sorption') return 'largest mass loading after vitamin D₃ exposure';
+    return 'repeated cycles approach a slower saturated response';
+  }
+  return 'conceptual mass-loading response';
+}
+function dominantProcess(eis){
+  if(eis.sigma > eis.Rct*0.8) return 'diffusion / Warburg';
+  if(eis.Rct > 900) return 'charge-transfer blocking';
+  return 'mixed interfacial kinetics';
+}
+
+function generatePresetInterpretation(){
+  const p = getParams();
+  const m = stageModifiers(p);
+  const preset = presets[state.presetKey];
+  let html = `<ul>`;
+  if(state.technique==='CV'){
+    const cv = generateCV();
+    const currentStrength = cv.oxPeak > 35 ? 'strong' : (cv.oxPeak > 18 ? 'moderate' : 'weak');
+    const kinetics = cv.sep < 0.12 ? 'faster and more reversible-looking' : (cv.sep < 0.20 ? 'moderately separated and quasi-reversible-looking' : 'more strongly separated and kinetically hindered');
+    if(p.electronCount===2){
+      html += `<li><b>Conducted experiment:</b> ${preset.short} under the selected stage <b>${p.stage}</b> in <b>resolved 2-electron mode</b> gives two anodic peaks at <b>Epa1 = ${fmt(cv.oxidationPeaks[0].E,3)} V</b> and <b>Epa2 = ${fmt(cv.oxidationPeaks[1].E,3)} V</b>, plus two cathodic peaks at <b>Epc1 = ${fmt(cv.reductionPeaks[0].E,3)} V</b> and <b>Epc2 = ${fmt(cv.reductionPeaks[1].E,3)} V</b>.</li>`;
+      html += `<li><b>Result interpretation:</b> the separated peak pairs indicate a sequential two-step electron-transfer process rather than a single enlarged redox couple. The simulated oxidation spacing is <b>${fmt(cv.oxidationPeaks[1].E - cv.oxidationPeaks[0].E,3)} V</b> and the reduction spacing is <b>${fmt(cv.reductionPeaks[1].E - cv.reductionPeaks[0].E,3)} V</b>.</li>`;
+      html += `<li><b>What the current tells you:</b> <b>Ipa1 ≈ ${fmt(cv.oxidationPeaks[0].amp,1)}</b>, <b>Ipa2 ≈ ${fmt(cv.oxidationPeaks[1].amp,1)}</b>, <b>Ipc1 ≈ ${fmt(cv.reductionPeaks[0].amp,1)}</b>, and <b>Ipc2 ≈ ${fmt(cv.reductionPeaks[1].amp,1)}</b> show the strength of each electron-transfer step. Increasing concentration, conductivity, and recognition factor amplifies both peak pairs according to the diffusion-controlled trend built into the simulator.</li>`;
+    } else {
+      html += `<li><b>Conducted experiment:</b> ${preset.short} under the selected stage <b>${p.stage}</b> in <b>${p.electronCount}-electron mode</b> gives a ${currentStrength} anodic response with <b>Epa = ${fmt(cv.Epa,3)} V</b> and <b>Epc = ${fmt(cv.Epc,3)} V</b>.</li>`;
+      html += `<li><b>Result interpretation:</b> the simulated <b>ΔEp = ${fmt(cv.sep,3)} V</b> means the redox couple is ${kinetics}. Smaller ΔEp would indicate easier electron transfer across the interface, while larger ΔEp indicates a more resistive or more occupied film.</li>`;
+      html += `<li><b>What the current tells you:</b> <b>Ipa ≈ ${fmt(cv.oxPeak,1)}</b> and <b>Ipc ≈ ${fmt(cv.redPeak,1)}</b> show how strongly the interface supports charge transfer. Increasing concentration, conductivity, and recognition factor amplifies the peaks according to the diffusion-controlled trend built into the simulator.</li>`;
+    }
+    html += `<li><b>Surface meaning:</b> this stage uses a surface modifier of <b>${fmt(m.surface,2)}</b>, conductivity factor <b>${fmt(m.conductivity,2)}</b>, and barrier factor <b>${fmt(m.barrier,2)}</b>, so the result should be read as the balance between active area enhancement and film blocking.</li>`;
+  } else if(state.technique==='DPV'){
+    const dpv = generateDPV();
+    const level = dpv.peakHeight > 55 ? 'high' : (dpv.peakHeight > 28 ? 'moderate' : 'low');
+    html += `<li><b>Conducted experiment:</b> ${preset.short} under <b>${p.stage}</b> gives a ${level} differential pulse peak centered at <b>${fmt(dpv.center,3)} V</b>.</li>`;
+    html += `<li><b>Result interpretation:</b> the analytical signal <b>ΔIp ≈ ${fmt(dpv.peakHeight,1)}</b> means the present settings are producing ${level} sensitivity. A larger ΔIp means the analyte or recognition event is easier to detect against background charging current.</li>`;
+    html += `<li><b>What the controls mean:</b> pulse amplitude <b>${fmt(p.amp,0)} mV</b> and step potential <b>${fmt(p.step,1)} mV</b> shape the pulse experiment. Higher amplitude generally increases signal magnitude, while the selected concentration and recognition factor determine how large the faradaic peak becomes.</li>`;
+    html += `<li><b>Calibration meaning:</b> when the peak height grows with concentration, the simulation follows the analytical relationship <b>ΔIp = mC + b</b>; therefore the slope of a calibration plot represents sensitivity and the intercept represents background response.</li>`;
+  } else if(state.technique==='EIS'){
+    const eis = generateEIS();
+    const blocking = eis.Rct > 1000 ? 'strongly blocking' : (eis.Rct > 350 ? 'moderately blocking' : 'weakly blocking');
+    const process = dominantProcess(eis);
+    html += `<li><b>Conducted experiment:</b> ${preset.short} under <b>${p.stage}</b> gives a ${blocking} interface with <b>Rct ≈ ${fmt(eis.Rct,0)} Ω</b> and <b>Rs ≈ ${fmt(eis.Rs,0)} Ω</b>.</li>`;
+    html += `<li><b>Result interpretation:</b> the semicircle size indicates how difficult electron transfer is across the surface. Here the dominant process is <b>${process}</b>, so the trace should be read in terms of both interfacial resistance and mass transport.</li>`;
+    html += `<li><b>Diffusion meaning:</b> the selected Warburg contribution produces <b>σ ≈ ${fmt(eis.sigma,0)}</b>. A stronger 45° tail means diffusion through solution or through the sensing layer is controlling the response more strongly at low frequency.</li>`;
+    html += `<li><b>Surface meaning:</b> because the selected stage applies barrier factor <b>${fmt(m.barrier,2)}</b> and conductivity factor <b>${fmt(m.conductivity,2)}</b>, this result should be interpreted as the electrical consequence of polymer growth, cavity opening, analyte rebinding, or conductive surface modification.</li>`;
+  } else {
+    const qcm = generateQCM();
+    const responseLevel = qcm.finalShiftHz > 40 ? 'strong' : (qcm.finalShiftHz > 18 ? 'moderate' : 'small');
+    html += `<li><b>Conducted experiment:</b> ${preset.short} under <b>${p.stage}</b> gives a ${responseLevel} QCM frequency-change profile with <b>|Δf|max ≈ ${fmt(qcm.finalShiftHz,1)} Hz</b>.</li>`;
+    html += `<li><b>Result interpretation:</b> the increasing magnitude of <b>|Δf|</b> represents increasing mass loading on the crystal during analyte binding. In the vitamin D thesis, the QCM stage follows CV-selected film growth and EIS evaluation of mass-transfer behavior.</li>`;
+    html += `<li><b>Kinetic meaning:</b> the simulated half-response time is <b>t½ ≈ ${fmt(qcm.halfTime,2)} min</b>. Shorter half-times mean the surface reaches a measurable binding response more quickly, while longer half-times indicate slower uptake through the sensing film.</li>`;
+    html += `<li><b>Sensitivity meaning:</b> the simulated sensitivity is <b>${fmt(qcm.sensitivityHzPerMgL,1)} Hz per concentration unit</b> and the estimated mass uptake is <b>${fmt(qcm.massNg,1)} ng</b>, so the trace should be read as a mass-sensitive complement to the CV and EIS outputs.</li>`;
+  }
+  html += `</ul>`;
+  return html;
+}
+
+function explainCV(cv){
+  return `<ul>
+    <li><b>Cyclic voltammetry theory:</b> the forward scan produces the anodic peak potential <b>E<sub>pa</sub></b> and anodic peak current <b>I<sub>pa</sub></b>, while the reverse scan produces the cathodic peak potential <b>E<sub>pc</sub></b> and cathodic peak current <b>I<sub>pc</sub></b>. The peak separation is <b>ΔE<sub>p</sub> = E<sub>pa</sub> − E<sub>pc</sub></b>.</li>
+    <li><b>Meaning of this trace:</b> a smaller ΔE<sub>p</sub> and larger peak currents indicate faster heterogeneous electron transfer and a less blocking interface. A larger ΔE<sub>p</sub> with suppressed peaks indicates slower kinetics, stronger film resistance, or target rebinding at the surface.</li>
+    <li><b>Relevant equation:</b> for a diffusion-controlled reversible system, the Randles–Ševčík relation is <b>I<sub>p</sub> = 2.69 × 10<sup>5</sup> n<sup>3/2</sup> A D<sup>1/2</sup> C v<sup>1/2</sup></b>. The simulator keeps that current scaling, but in <b>2-electron mode</b> it now resolves the response into <b>two anodic peaks</b> and <b>two cathodic peaks</b> to represent a sequential two-step electron-transfer process instead of one enlarged peak pair.</li>
+    <li><b>Interpreting the shown Epa and Epc:</b> if <b>E<sub>pa</sub></b> shifts to more positive values or <b>E<sub>pc</sub></b> shifts to more negative values, extra energy is required for charge transfer, which is consistent with a more resistive or more occupied surface film.</li>
+    <li><b>Preset reading:</b> for the antiviral MIP case, polymerization blocks the interface, extraction reopens the imprinted cavities, and rebinding partially blocks them again. For the vitamin D preset, sorption suppresses the redox response. For the tyrosine preset, surface modification increases current by improving conductivity and effective area.</li>
+  </ul>`;
+}
+
+function explainDPV(dpv){
+  return `<ul>
+    <li><b>Differential pulse voltammetry theory:</b> current is sampled immediately before each pulse and at the end of the pulse, and the plotted analytical signal is the difference <b>ΔI = I<sub>after pulse</sub> − I<sub>before pulse</sub></b>. This minimizes capacitive current and enhances faradaic sensitivity.</li>
+    <li><b>Meaning of this trace:</b> the peak position identifies the oxidation or reduction event of the analyte or of the interfacial recognition process, while the peak height is the main quantitative parameter used to infer concentration.</li>
+    <li><b>Relevant equation:</b> a calibration relation is commonly expressed as <b>ΔI<sub>p</sub> = mC + b</b>, where <b>m</b> is sensitivity, <b>C</b> is analyte concentration, and <b>b</b> is the intercept. In practice, a larger slope means better analytical sensitivity.</li>
+    <li><b>Pulse interpretation:</b> increasing pulse amplitude generally increases the faradaic signal, while step potential controls how the potential window is traversed. The simulator therefore uses these controls to change the analytical peak height and shape without altering the rest of the app logic.</li>
+    <li><b>Preset reading:</b> in the tyrosine preset the peak is treated as the direct oxidation signal of tyrosine; in the antiviral preset the peak is interpreted as an interface-sensitive signal that changes when template cavities are open or reoccupied.</li>
+  </ul>`;
+}
+
+function explainEIS(eis){
+  return `<ul>
+    <li><b>Electrochemical impedance spectroscopy theory:</b> the impedance is treated as a complex quantity, <b>Z(ω) = Z′ + jZ″</b>. In a Nyquist plot, the x-axis is the real component <b>Z′</b> and the y-axis is the negative imaginary component <b>−Z″</b>.</li>
+    <li><b>Meaning of this trace:</b> the high-frequency intercept approximates solution resistance <b>R<sub>s</sub></b>, the semicircle diameter approximates charge-transfer resistance <b>R<sub>ct</sub></b>, and the low-frequency inclined tail indicates diffusion control or Warburg impedance.</li>
+    <li><b>Relevant equation:</b> the Warburg contribution is commonly written as <b>Z<sub>w</sub> = σ(1 − j)/ω<sup>1/2</sup></b>, where <b>σ</b> is the Warburg coefficient and <b>ω</b> is angular frequency. A longer 45° tail therefore indicates stronger mass-transfer limitation.</li>
+    <li><b>Equivalent-circuit interpretation:</b> for a Randles-type interface, the total response can be interpreted from <b>R<sub>s</sub></b>, <b>R<sub>ct</sub></b>, double-layer capacitance, and diffusion impedance. A larger semicircle means a more blocking interface or more difficult electron transfer.</li>
+    <li><b>Preset reading:</b> for vitamin D, the tail is intentionally emphasized to show mass-transfer dominance; for tyrosine, the modifier shrinks the semicircle by improving conductivity; for the antiviral MIP, polymerization increases <b>R<sub>ct</sub></b>, extraction decreases it, and rebinding increases it again.</li>
+  </ul>`;
+}
+
+function explainQCM(qcm){
+  return `<ul>
+    <li><b>Quartz Crystal Microbalance theory:</b> QCM follows resonance-frequency change as mass accumulates on the crystal surface. For a rigid, thin film the classical Sauerbrey relationship is <b>Δf = −C<sub>f</sub>Δm</b>, so a larger magnitude of frequency decrease corresponds to greater adsorbed mass.</li>
+    <li><b>Meaning of this trace:</b> the rising <b>|Δf|</b> profile represents progressive analyte uptake by the coated crystal until a plateau is approached. The plateau therefore represents near-saturation of available binding sites under the selected conditions.</li>
+    <li><b>Why this is thesis-aligned:</b> in the vitamin D thesis, thin polymer films were first optimized by cyclic voltammetry, their mass-transfer behavior was checked by impedance, and then eQCM/QCM was used for vitamin D₃ determination on the quartz crystal.</li>
+    <li><b>Kinetic interpretation:</b> <b>t½</b> indicates how fast the sensor reaches half of its final response. Faster binding gives a steeper initial rise, while slower transport through the film gives a more gradual curve.</li>
+    <li><b>Preset reading:</b> the vitamin D preset uses this QCM view to complement the CV and EIS tabs, consistent with the thesis report that QCM detected vitamin D at concentrations as low as <b>0.0100 mg L⁻¹</b>.</li>
+  </ul>`;
+}
+
+init();
+</script>
+</body>
+</html>
