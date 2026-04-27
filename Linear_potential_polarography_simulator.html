@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Linear Potential Voltammetry Simulator - Improved Accuracy</title>
+  <style>
+    :root{
+      --bg:#f6f8fb; --panel:#ffffff; --ink:#172033; --muted:#5b6475; --line:#dbe2ee;
+      --accent:#1f6feb; --accent2:#18a37a; --warn:#b06a00; --shadow:0 10px 30px rgba(16,24,40,.08);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:Segoe UI,Arial,sans-serif}
+    .topbar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:14px 18px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+    .brand h1{margin:0;font-size:20px}.brand p{margin:4px 0 0;color:var(--muted);font-size:13px}
+    .logo{font-weight:700;color:var(--accent);border:2px solid var(--accent);border-radius:999px;padding:8px 12px;white-space:nowrap}
+    .wrap{max-width:1550px;margin:0 auto;padding:18px;display:grid;grid-template-columns:360px 1fr 360px;gap:18px}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .hd{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}.hd h2{margin:0;font-size:17px}
+    .bd{padding:16px 18px}.scroll{max-height:calc(100vh - 140px);overflow:auto}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:700}
+    input,select,button{width:100%;border:1px solid #cfd7e6;border-radius:12px;padding:10px 12px;font:inherit;background:#fff;color:var(--ink)}
+    input[type=range]{padding:0} button{cursor:pointer;background:var(--accent);color:#fff;font-weight:700;border:none;box-shadow:0 8px 18px rgba(31,111,235,.18)}
+    button.secondary{background:#edf3ff;color:var(--accent);border:1px solid #cfe0ff;box-shadow:none} button.ghost{background:#f5f7fb;color:var(--ink);border:1px solid var(--line);box-shadow:none}
+    .btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.pill{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;background:#eef6ff;color:var(--accent);border:1px solid #d8e7ff;font-weight:700}
+    .card{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fbfcff;margin-top:10px}.small{font-size:12px;color:var(--muted)}
+    .exp-btn{margin-bottom:10px;text-align:left;background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:none;padding:12px}.exp-btn.active{border-color:var(--accent);background:#eef5ff}
+    canvas{display:block;width:100%;background:linear-gradient(180deg,#ffffff,#fbfdff);border-radius:18px;border:1px solid var(--line)}
+    .readout{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:12px}.cell{border:1px solid var(--line);background:#fbfcff;border-radius:14px;padding:10px 12px}.cell .k{font-size:11px;color:var(--muted);text-transform:uppercase}.cell .v{font-size:17px;font-weight:700;margin-top:4px}
+    .machine{border:1px solid var(--line);border-radius:18px;padding:12px;background:#fcfdff;margin-top:14px}.machine svg{width:100%;height:auto;display:block}
+    .eq{font-family:Cambria,Georgia,serif;background:#f7faff;border:1px solid #dde7fb;padding:10px 12px;border-radius:12px;margin:10px 0;overflow:auto}
+    .footer-note{padding:12px 18px;border-top:1px solid var(--line);background:#fbfcff;color:var(--muted);font-size:12px}
+    ul{padding-left:18px;margin:8px 0} li{margin:6px 0}
+    @media (max-width:1200px){.wrap{grid-template-columns:1fr}.scroll{max-height:none}.readout{grid-template-columns:1fr 1fr}}
+    @media (max-width:720px){.grid2,.grid3,.readout{grid-template-columns:1fr}.panel.scroll{max-height:45vh;overflow:auto}.panel:not(.scroll) .bd{max-height:45vh;overflow:auto}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <h1>Linear Potential Voltammetry Simulator</h1>
+      <p>Mulungushi University – SNAS • Created by Mr Tembo ZN • Improved teaching-accuracy edition</p>
+    </div>
+    <div class="logo">MU–SNAS</div>
+  </div>
+
+  <div class="wrap">
+    <section class="panel scroll">
+      <div class="hd"><h2>Instrument Setup</h2><span class="pill" id="modePill">Polarography mode</span></div>
+      <div class="bd">
+        <label for="technique">Technique</label>
+        <select id="technique">
+          <option value="polarography">Polarography (DME / mercury)</option>
+          <option value="stationary">Stationary electrode linear sweep voltammetry</option>
+        </select>
+
+        <div class="grid2" style="margin-top:12px">
+          <div><label for="startV">Start potential / V</label><input id="startV" type="number" step="0.01" value="-0.10"></div>
+          <div><label for="endV">End potential / V</label><input id="endV" type="number" step="0.01" value="-1.00"></div>
+          <div><label for="scanRate">Scan rate / V s⁻¹</label><input id="scanRate" type="number" step="0.01" value="0.05"></div>
+          <div><label for="concentration">Analyte concentration / mM</label><input id="concentration" type="number" step="0.05" value="1.00"></div>
+          <div><label for="temperature">Temperature / °C</label><input id="temperature" type="number" step="1" value="25"></div>
+          <div><label for="noise">Noise / µA</label><input id="noise" type="number" step="0.02" value="0.12"></div>
+        </div>
+
+        <div class="grid2" style="margin-top:12px">
+          <div><label for="reference">Reference electrode</label><select id="reference"><option>SCE</option><option>Ag/AgCl</option></select></div>
+          <div><label for="supportElectrolyte">Supporting electrolyte</label><select id="supportElectrolyte"><option>0.1 M KCl</option><option>0.1 M NaNO₃</option><option>Phosphate buffer</option><option>Acetate buffer</option></select></div>
+          <div><label for="workingElectrode">Working electrode</label><select id="workingElectrode"><option>DME</option><option>Glassy carbon</option><option>Pt disk</option><option>Hg film</option></select></div>
+          <div><label for="dropTime">Drop time / s</label><input id="dropTime" type="number" step="0.1" value="3.0"></div>
+        </div>
+
+        <div class="grid2" style="margin-top:12px">
+          <div><label for="baseline">Baseline / µA</label><input id="baseline" type="number" step="0.05" value="0.20"></div>
+          <div><label for="sensitivity">Area / sensitivity factor</label><input id="sensitivity" type="number" step="0.1" value="1.0"></div>
+        </div>
+
+        <div class="btns" style="margin-top:14px">
+          <button id="runBtn">Run simulation</button>
+          <button id="pauseBtn" class="secondary">Pause</button>
+          <button id="resetBtn" class="ghost">Reset trace</button>
+        </div>
+
+        <div class="card">
+          <div><strong id="analyteTitle">Cd²⁺ polarography</strong></div>
+          <div class="small" id="experimentSummary">This preset shows a single sigmoidal polarographic wave.</div>
+          <ul id="quickNotes"></ul>
+        </div>
+
+        <div class="card">
+          <div class="small"><strong>Model upgrade in this version:</strong> polarography now scales limiting current mainly with concentration and approximately with the square root of drop time; stationary-electrode LSV scales peak current mainly with concentration and approximately with the square root of scan rate. This makes the control sliders teach the right direction of change.</div>
+        </div>
+      </div>
+      <div class="footer-note">Offline HTML, no libraries required.</div>
+    </section>
+
+    <section class="panel">
+      <div class="hd"><h2>Voltammogram & Virtual Cell</h2><span class="pill" id="statusPill">Ready</span></div>
+      <div class="bd">
+        <canvas id="graph" width="900" height="470"></canvas>
+        <div class="readout">
+          <div class="cell"><div class="k">Potential</div><div class="v" id="readPotential">—</div></div>
+          <div class="cell"><div class="k">Current</div><div class="v" id="readCurrent">—</div></div>
+          <div class="cell"><div class="k">Characteristic</div><div class="v" id="readMarker">—</div></div>
+          <div class="cell"><div class="k">Signal type</div><div class="v" id="readType">—</div></div>
+          <div class="cell"><div class="k">Status</div><div class="v" id="readStatus">Idle</div></div>
+        </div>
+
+        <div class="machine">
+          <svg viewBox="0 0 930 360" aria-label="Electrochemical cell diagram">
+            <defs><linearGradient id="liq" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#dff4ff"/><stop offset="100%" stop-color="#bde1fb"/></linearGradient></defs>
+            <rect x="38" y="42" width="225" height="160" rx="16" fill="#f8fbff" stroke="#cbd8ea"/>
+            <text x="58" y="72" font-size="20" font-weight="700" fill="#1f6feb">Potentiostat / Ramp Generator</text>
+            <text x="58" y="103" font-size="15" fill="#4b5565">Applies linear E(t) to working electrode</text>
+            <text x="58" y="129" font-size="15" fill="#4b5565">Measures current response continuously</text>
+            <text x="58" y="155" font-size="15" fill="#4b5565">Controls Eworking − Ereference</text>
+            <rect x="330" y="42" width="540" height="252" rx="20" fill="#ffffff" stroke="#cbd8ea"/>
+            <rect x="372" y="120" width="458" height="124" rx="18" fill="url(#liq)" stroke="#a9d2f1"/>
+            <text x="522" y="108" font-size="19" font-weight="700" fill="#1e3a5f">Electrochemical Cell</text>
+            <text x="520" y="168" font-size="16" fill="#234">Supporting electrolyte + analyte</text>
+            <line x1="455" y1="70" x2="455" y2="120" stroke="#334155" stroke-width="6"/>
+            <line x1="602" y1="70" x2="602" y2="120" stroke="#334155" stroke-width="6"/>
+            <line x1="748" y1="70" x2="748" y2="120" stroke="#334155" stroke-width="6"/>
+            <rect x="437" y="120" width="36" height="84" rx="10" fill="#f1f5f9" stroke="#475569"/>
+            <rect x="584" y="120" width="36" height="92" rx="10" fill="#f8fafc" stroke="#475569"/>
+            <rect x="730" y="120" width="36" height="74" rx="10" fill="#eef2ff" stroke="#475569"/>
+            <circle id="dropBubble" cx="455" cy="216" r="12" fill="#8c8c8c" stroke="#5d5d5d"/>
+            <rect x="451" y="200" width="8" height="24" fill="#8c8c8c"/>
+            <text x="404" y="58" font-size="16" fill="#334">Working</text>
+            <text x="566" y="58" font-size="16" fill="#334">Reference</text>
+            <text x="708" y="58" font-size="16" fill="#334">Auxiliary</text>
+            <text id="workingLabelSvg" x="394" y="272" font-size="15" fill="#334">DME</text>
+            <text id="referenceLabelSvg" x="560" y="272" font-size="15" fill="#334">SCE</text>
+            <text x="706" y="272" font-size="15" fill="#334">Pt wire</text>
+            <path d="M262 120 C310 120, 320 120, 330 120" stroke="#1f6feb" stroke-width="4" fill="none"/>
+            <path d="M262 150 C305 150, 320 70, 455 70" stroke="#1f6feb" stroke-width="4" fill="none"/>
+            <path d="M262 172 C305 172, 320 70, 602 70" stroke="#18a37a" stroke-width="4" fill="none"/>
+            <path d="M262 194 C305 194, 320 70, 748 70" stroke="#b06a00" stroke-width="4" fill="none"/>
+          </svg>
+        </div>
+</div>
+    </section>
+
+    <section class="panel scroll">
+      <div class="hd"><h2>Experiments & Accuracy Notes</h2><span class="pill">4 presets</span></div>
+      <div class="bd">
+        <button class="exp-btn active" data-exp="0">Experiment 1 — Cd²⁺ polarography at DME</button>
+        <button class="exp-btn" data-exp="1">Experiment 2 — Pb²⁺ + Cd²⁺ mixture polarography</button>
+        <button class="exp-btn" data-exp="2">Experiment 3 — Ferricyanide reduction at glassy carbon</button>
+        <button class="exp-btn" data-exp="3">Experiment 4 — Ascorbic acid oxidation at Pt disk</button>
+
+        <div class="card" id="expDetails"></div>
+
+        <div class="card">
+          <strong>Why this version is more accurate</strong>
+          <ul>
+            <li>Polarographic wave height responds to concentration and drop time in the correct direction.</li>
+            <li>Stationary-electrode peak height responds to concentration and approximately to √scan-rate in the correct direction.</li>
+            <li>A mixture preset is included, so students can see two separated half-wave regions in one polarogram.</li>
+            <li>The current axis auto-scales, so oxidation and reduction traces are both displayed realistically.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-note">Still a teaching simulator, not a finite-element research solver.</div>
+    </section>
+  </div>
+
+<script>
+const presets = [
+  {
+    name:"Cd²⁺ polarography",
+    technique:"polarography", workingElectrode:"DME", reference:"SCE", electrolyte:"0.1 M KCl",
+    startV:-0.10, endV:-1.00, scanRate:0.05, concentration:1.00, temperature:25, noise:0.10, dropTime:3.0, baseline:0.18, sensitivity:1.0,
+    components:[{kind:"wave", Ehalf:-0.58, width:0.050, idBase:6.2, label:"Cd²⁺/Cd(Hg)"}],
+    signalType:"Sigmoidal diffusion wave",
+    notes:["Single reduction wave at a mercury drop electrode.","Half-wave potential identifies the analyte.","Limiting current increases with concentration and with longer drop time." ]
+  },
+  {
+    name:"Pb²⁺ + Cd²⁺ mixture polarography",
+    technique:"polarography", workingElectrode:"DME", reference:"SCE", electrolyte:"0.1 M KCl",
+    startV:-0.05, endV:-0.95, scanRate:0.05, concentration:1.00, temperature:25, noise:0.10, dropTime:3.0, baseline:0.18, sensitivity:1.0,
+    components:[
+      {kind:"wave", Ehalf:-0.42, width:0.040, idBase:4.8, label:"Pb²⁺/Pb(Hg)"},
+      {kind:"wave", Ehalf:-0.64, width:0.048, idBase:4.4, label:"Cd²⁺/Cd(Hg)"}
+    ],
+    signalType:"Two-step polarographic wave",
+    notes:["Two analytes create two separated wave rises.","Students can compare two half-wave potentials in one run.","Total limiting current is the sum of both diffusion-controlled contributions."]
+  },
+  {
+    name:"Ferricyanide reduction",
+    technique:"stationary", workingElectrode:"Glassy carbon", reference:"Ag/AgCl", electrolyte:"Phosphate buffer",
+    startV:0.55, endV:-0.10, scanRate:0.08, concentration:1.00, temperature:25, noise:0.08, dropTime:0.0, baseline:0.06, sensitivity:1.0,
+    components:[{kind:"peak", Ep:0.19, sigma:0.070, ipBase:-7.5, label:"Fe(CN)₆³⁻ + e⁻ → Fe(CN)₆⁴⁻"}],
+    signalType:"Cathodic peak",
+    notes:["A stationary electrode gives a peak rather than a plateau.","Peak current increases with concentration and approximately with √scan rate.","Peak potential is the key qualitative marker here."]
+  },
+  {
+    name:"Ascorbic acid oxidation",
+    technique:"stationary", workingElectrode:"Pt disk", reference:"Ag/AgCl", electrolyte:"Acetate buffer",
+    startV:0.00, endV:0.80, scanRate:0.06, concentration:1.20, temperature:25, noise:0.08, dropTime:0.0, baseline:0.04, sensitivity:1.0,
+    components:[{kind:"peak", Ep:0.36, sigma:0.090, ipBase:6.4, label:"Ascorbic acid oxidation"}],
+    signalType:"Anodic peak",
+    notes:["Positive sweep generates an oxidation peak.","The sign of current is positive for this preset.","Changing scan rate mainly changes peak height, not only the shape."]
+  }
+];
+
+const els = {
+  technique:document.getElementById('technique'), startV:document.getElementById('startV'), endV:document.getElementById('endV'),
+  scanRate:document.getElementById('scanRate'), concentration:document.getElementById('concentration'), temperature:document.getElementById('temperature'),
+  noise:document.getElementById('noise'), reference:document.getElementById('reference'), supportElectrolyte:document.getElementById('supportElectrolyte'),
+  workingElectrode:document.getElementById('workingElectrode'), dropTime:document.getElementById('dropTime'), baseline:document.getElementById('baseline'), sensitivity:document.getElementById('sensitivity'),
+  analyteTitle:document.getElementById('analyteTitle'), experimentSummary:document.getElementById('experimentSummary'), quickNotes:document.getElementById('quickNotes'),
+  modePill:document.getElementById('modePill'), statusPill:document.getElementById('statusPill'), readPotential:document.getElementById('readPotential'), readCurrent:document.getElementById('readCurrent'), readMarker:document.getElementById('readMarker'),
+  readType:document.getElementById('readType'), readStatus:document.getElementById('readStatus'), workingLabelSvg:document.getElementById('workingLabelSvg'), referenceLabelSvg:document.getElementById('referenceLabelSvg'), dropBubble:document.getElementById('dropBubble'), expDetails:document.getElementById('expDetails')
+};
+const canvas = document.getElementById('graph'); const ctx = canvas.getContext('2d');
+let currentPreset = 0, data = [], shown = 0, raf = null, running = false, paused = false;
+
+function setPreset(i){
+  currentPreset = i; const p = presets[i];
+  els.technique.value = p.technique; els.startV.value = p.startV.toFixed(2); els.endV.value = p.endV.toFixed(2); els.scanRate.value = p.scanRate.toFixed(2);
+  els.concentration.value = p.concentration.toFixed(2); els.temperature.value = p.temperature; els.noise.value = p.noise.toFixed(2); els.reference.value = p.reference;
+  els.supportElectrolyte.value = p.electrolyte; els.workingElectrode.value = p.workingElectrode; els.dropTime.value = p.dropTime.toFixed(1); els.baseline.value = p.baseline.toFixed(2); els.sensitivity.value = p.sensitivity.toFixed(1);
+  document.querySelectorAll('.exp-btn').forEach((b,idx)=>b.classList.toggle('active', idx===i));
+  refreshSummary(); buildData(); drawGraph();
+}
+
+function refreshSummary(){
+  const p = presets[currentPreset];
+  els.analyteTitle.textContent = p.name;
+  els.experimentSummary.textContent = p.notes[0];
+  els.quickNotes.innerHTML = p.notes.map(n=>`<li>${n}</li>`).join('');
+  els.modePill.textContent = els.technique.value==='polarography' ? 'Polarography mode' : 'Stationary electrode mode';
+  els.workingLabelSvg.textContent = els.workingElectrode.value; els.referenceLabelSvg.textContent = els.reference.value;
+  els.dropBubble.style.display = els.technique.value==='polarography' ? 'block' : 'none';
+  const first = p.components[0];
+  const marker = first.kind==='wave' ? `E½ ≈ ${first.Ehalf.toFixed(2)} V` : `Ep ≈ ${first.Ep.toFixed(2)} V`;
+  els.readMarker.textContent = marker; els.readType.textContent = p.signalType;
+  els.expDetails.innerHTML = `<strong>${p.name}</strong><div class="small" style="margin-top:8px"><div><strong>Technique:</strong> ${p.technique==='polarography'?'Polarography':'Stationary electrode LSV'}</div><div><strong>Working electrode:</strong> ${els.workingElectrode.value}</div><div><strong>Reference:</strong> ${els.reference.value}</div><div><strong>Electrolyte:</strong> ${els.supportElectrolyte.value}</div><div style="margin-top:8px">${p.components.map(c=>c.label).join('; ')}</div></div>`;
+}
+
+function settings(){
+  return {
+    technique:els.technique.value, startV:Number(els.startV.value), endV:Number(els.endV.value), scanRate:Math.max(0.001, Number(els.scanRate.value)), concentration:Math.max(0.01, Number(els.concentration.value)),
+    temperature:Number(els.temperature.value), noise:Math.max(0,Number(els.noise.value)), reference:els.reference.value, electrolyte:els.supportElectrolyte.value,
+    workingElectrode:els.workingElectrode.value, dropTime:Math.max(0,Number(els.dropTime.value)), baseline:Number(els.baseline.value), sensitivity:Math.max(0.1,Number(els.sensitivity.value))
+  };
+}
+
+function pseudoNoise(seed){ return Math.sin(seed*0.21)*0.5 + Math.sin(seed*0.053)*0.3 + Math.sin(seed*0.77)*0.2; }
+
+function buildData(){
+  const p = presets[currentPreset], s = settings(); refreshSummary(); data = [];
+  const n = 520, span = s.endV - s.startV;
+  for(let i=0;i<n;i++){
+    const f = i/(n-1), E = s.startV + span*f; let I = s.baseline;
+    if(s.technique === 'polarography'){
+      // Teaching approximation: limiting current proportional to concentration and ~ sqrt(drop time)
+      const dtScale = Math.sqrt(Math.max(s.dropTime,0.2)/Math.max(p.dropTime || 3.0,0.2));
+      for(const c of p.components){
+        const id = c.idBase * (s.concentration/p.concentration) * dtScale * s.sensitivity;
+        const wave = 1/(1+Math.exp((E - c.Ehalf)/c.width));
+        I += id * wave;
+      }
+      I += 0.12*(s.dropTime/3)*Math.sin(i*0.22) + 0.04*Math.cos(i*0.09); // slight drop ripple
+      if(s.endV > s.startV){ I = -I; } // reverse display if user sweeps in opposite direction
+    } else {
+      // Teaching approximation: peak current proportional to concentration and ~ sqrt(scan rate)
+      const vScale = Math.sqrt(s.scanRate/p.scanRate);
+      for(const c of p.components){
+        const ip = c.ipBase * (s.concentration/p.concentration) * vScale * s.sensitivity;
+        const gauss = Math.exp(-0.5 * Math.pow((E - c.Ep)/c.sigma,2));
+        I += ip * gauss;
+      }
+      I += 0.10*(E - s.startV)/(span || 1); // slight charging/background slope
+    }
+    const tempScale = 1 + 0.002*(s.temperature - 25);
+    I *= tempScale;
+    I += s.noise * pseudoNoise(i+11);
+    data.push({E,I});
+  }
+  shown = 0; updateReadouts(null);
+}
+
+function bounds(){ let min=Infinity,max=-Infinity; for(const p of data){ if(p.I<min) min=p.I; if(p.I>max) max=p.I; } const pad=Math.max(0.8,(max-min)*0.15 || 1); return {min:min-pad,max:max+pad}; }
+function map(E,I,b){ const m={l:72,r:22,t:24,b:54}, W=canvas.width,H=canvas.height; const xMin=Number(els.startV.value), xMax=Number(els.endV.value); return {x:m.l + ((E-xMin)/(xMax-xMin || 1))*(W-m.l-m.r), y:H-m.b - ((I-b.min)/(b.max-b.min || 1))*(H-m.t-m.b)}; }
+
+function drawAxes(b){
+  const W=canvas.width,H=canvas.height,m={l:72,r:22,t:24,b:54}; ctx.clearRect(0,0,W,H); ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#eef2f7'; ctx.lineWidth=1;
+  for(let i=0;i<10;i++){ const x=m.l+i*(W-m.l-m.r)/9; ctx.beginPath(); ctx.moveTo(x,m.t); ctx.lineTo(x,H-m.b); ctx.stroke(); }
+  for(let j=0;j<8;j++){ const y=m.t+j*(H-m.t-m.b)/7; ctx.beginPath(); ctx.moveTo(m.l,y); ctx.lineTo(W-m.r,y); ctx.stroke(); }
+  ctx.strokeStyle='#64748b'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(m.l,m.t); ctx.lineTo(m.l,H-m.b); ctx.lineTo(W-m.r,H-m.b); ctx.stroke();
+  ctx.fillStyle='#334155'; ctx.font='14px Segoe UI'; ctx.fillText('Current / µA', 18, 18); ctx.fillText('Potential / V', W-105, H-18);
+  const xMin=Number(els.startV.value), xMax=Number(els.endV.value);
+  for(let i=0;i<6;i++){ const f=i/5, x=m.l+f*(W-m.l-m.r), val=xMin + (xMax-xMin)*f; ctx.fillStyle='#475569'; ctx.fillText(val.toFixed(2), x-15, H-m.b+22); }
+  for(let i=0;i<6;i++){ const f=i/5, y=H-m.b-f*(H-m.t-m.b), val=b.min + (b.max-b.min)*f; ctx.fillStyle='#475569'; ctx.fillText(val.toFixed(1), 18, y+4); }
+}
+
+function drawGraph(){
+  if(!data.length) return; const b=bounds(); drawAxes(b);
+  ctx.lineWidth=2.7; ctx.strokeStyle='#1f6feb'; ctx.beginPath(); const lim=Math.max(0,Math.min(shown,data.length));
+  for(let i=0;i<lim;i++){ const p=map(data[i].E,data[i].I,b); if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); }
+  ctx.stroke();
+  if(lim>0){ const p=map(data[lim-1].E,data[lim-1].I,b); ctx.fillStyle='#d63f2f'; ctx.beginPath(); ctx.arc(p.x,p.y,4.6,0,Math.PI*2); ctx.fill(); }
+  const preset = presets[currentPreset];
+  preset.components.forEach((c,idx)=>{
+    const markerE = c.kind==='wave' ? c.Ehalf : c.Ep; const mp=map(markerE,b.min,b); // y ignored later
+    ctx.setLineDash([6,6]); ctx.strokeStyle=idx===0?'#b06a00':'#18a37a'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(mp.x,24); ctx.lineTo(mp.x,canvas.height-54); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=idx===0?'#b06a00':'#18a37a'; ctx.font='bold 13px Segoe UI'; ctx.fillText((c.kind==='wave'?'E½ ':'Ep ')+markerE.toFixed(2)+' V', mp.x+6, 38 + idx*18);
+  });
+}
+
+function updateReadouts(point){
+  const preset=presets[currentPreset], first=preset.components[0];
+  els.readPotential.textContent = point ? `${point.E.toFixed(3)} V` : '—';
+  els.readCurrent.textContent = point ? `${point.I.toFixed(2)} µA` : '—';
+  els.readMarker.textContent = first.kind==='wave' ? `E½ ≈ ${first.Ehalf.toFixed(2)} V` : `Ep ≈ ${first.Ep.toFixed(2)} V`;
+  els.readType.textContent = preset.signalType;
+}
+
+function animate(){
+  if(!running || paused) return; shown += 4;
+  if(shown >= data.length){ shown = data.length; running=false; els.statusPill.textContent='Completed'; els.readStatus.textContent='Completed'; drawGraph(); updateReadouts(data[data.length-1]); return; }
+  drawGraph(); const point=data[Math.min(shown-1,data.length-1)]; updateReadouts(point); els.statusPill.textContent='Scanning'; els.readStatus.textContent='Scanning';
+  if(els.technique.value==='polarography'){ els.dropBubble.setAttribute('r', (12 + 3*Math.sin(shown/9)).toFixed(1)); }
+  raf=requestAnimationFrame(animate);
+}
+
+function runSimulation(){ cancelAnimationFrame(raf); paused=false; buildData(); shown=0; running=true; els.statusPill.textContent='Scanning'; els.readStatus.textContent='Scanning'; animate(); }
+function resetTrace(){ cancelAnimationFrame(raf); running=false; paused=false; shown=0; buildData(); drawGraph(); els.statusPill.textContent='Ready'; els.readStatus.textContent='Ready'; }
+
+Array.from(document.querySelectorAll('.exp-btn')).forEach((btn,i)=>btn.addEventListener('click',()=>setPreset(i)));
+['technique','startV','endV','scanRate','concentration','temperature','noise','reference','supportElectrolyte','workingElectrode','dropTime','baseline','sensitivity'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{ refreshSummary(); buildData(); drawGraph(); }));
+document.getElementById('runBtn').addEventListener('click', runSimulation);
+document.getElementById('pauseBtn').addEventListener('click', ()=>{ paused=!paused; if(!paused && running) animate(); els.readStatus.textContent=paused?'Paused':(running?'Scanning':'Ready'); els.statusPill.textContent=paused?'Paused':(running?'Scanning':'Ready'); });
+document.getElementById('resetBtn').addEventListener('click', resetTrace);
+setPreset(0);
+</script>
+</body>
+</html>
